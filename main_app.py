@@ -1,20 +1,8 @@
-import os
 import streamlit as st
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from io import BytesIO
-from dotenv import load_dotenv
-
-# -------------------------------
-# Load .env variables
-# -------------------------------
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    st.error("DATABASE_URL not found! Please set it in your .env file.")
-    st.stop()
-
-engine = create_engine(DATABASE_URL, echo=True)
+from census_app.db import engine
 
 # -------------------------------
 # Page State
@@ -27,10 +15,12 @@ if "admin_logged_in" not in st.session_state:
 # -------------------------------
 # Admin credentials
 # -------------------------------
-ADMIN_USERS = {"admin": "admin123"}
+ADMIN_USERS = {
+    "admin": "admin123",
+}
 
 # -------------------------------
-# Helper Functions
+# Reset Session Helper
 # -------------------------------
 def reset_session():
     keys_to_reset = [
@@ -43,7 +33,7 @@ def reset_session():
         if key in st.session_state:
             del st.session_state[key]
     st.success("Session reset!")
-    st.experimental_rerun()
+    st.rerun()
 
 # -------------------------------
 # Landing Page
@@ -51,10 +41,16 @@ def reset_session():
 def landing_page():
     st.set_page_config(page_title="NACP Bahamas", layout="wide")
     st.title("🇧🇸 NACP - National Agricultural Census Pilot Project")
-    st.markdown(
-        "Welcome to the National Agricultural Census Pilot Project (NACP).  \n"
-        "Please provide your location information to begin the registration process or login as admin."
-    )
+    st.markdown("""
+    Welcome to the National Agricultural Census Pilot Project (NACP).  
+    Please provide your location information to begin the registration process or login as admin.
+    """)
+
+    # Map input
+    if "latitude" not in st.session_state:
+        st.session_state.latitude = None
+    if "longitude" not in st.session_state:
+        st.session_state.longitude = None
 
     col1, col2 = st.columns(2)
     with col1:
@@ -99,28 +95,28 @@ def admin_logout():
     if st.button("Logout"):
         st.session_state.admin_logged_in = False
         st.session_state.page = "landing"
-        st.experimental_rerun()
+        st.rerun()
 
 # -------------------------------
 # Admin Dashboard
 # -------------------------------
 def admin_dashboard():
     st.title("📊 NACP Admin Dashboard")
-    admin_logout()
+    admin_logout()  # Logout button at top
 
-    try:
-        with engine.begin() as conn:
-            df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
-    except Exception as e:
-        st.error(f"Failed to fetch data: {e}")
-        return
+    # Fetch data
+    with engine.begin() as conn:
+        df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
 
+    # Refresh button
     if st.button("🔄 Refresh Data"):
-        st.experimental_rerun()
+        st.rerun()
 
+    # Table
     st.subheader("Table of Registrations")
     st.dataframe(df)
 
+    # Charts
     if 'island' in df.columns:
         st.subheader("Registrations by Island")
         st.bar_chart(df['island'].value_counts())
@@ -131,12 +127,11 @@ def admin_dashboard():
         counts = {m: df['communication_methods'].apply(lambda x: m in x if x else False).sum() for m in methods}
         st.bar_chart(pd.Series(counts))
 
-    # Export CSV
+    # Export
     st.subheader("Export Data")
     csv_data = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download CSV", csv_data, "registration_data.csv", "text/csv")
 
-    # Export Excel
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Data")
@@ -151,41 +146,32 @@ def admin_dashboard():
 # -------------------------------
 # Registration Form
 # -------------------------------
-# -------------------------------
-# Registration Form
-# -------------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
     st.write("I understand my information will be kept strictly confidential and used only for statistical purposes.")
 
-    # ---------------- Consent ----------------
     consent_options = ["I do not wish to participate", "I do wish to participate"]
-    if "consent" not in st.session_state:
-        st.session_state.consent = consent_options[0]
+    consent = st.radio("Consent", consent_options)
 
-    st.session_state.consent = st.radio("Consent", consent_options, index=consent_options.index(st.session_state.consent))
-
-    if st.session_state.consent == "I do not wish to participate":
+    if consent == "I do not wish to participate":
         st.warning("You cannot proceed without consenting.")
         return
 
-    consent_bool = st.session_state.consent == "I do wish to participate"
+    consent_bool = True if consent == "I do wish to participate" else False
 
-    # ---------------- Contact Info ----------------
-    for field in ["first_name", "last_name", "email", "telephone", "cell"]:
-        if field not in st.session_state:
-            st.session_state[field] = ""
-        st.session_state[field] = st.text_input(field.replace("_", " ").title(), value=st.session_state[field], key=field)
+    # Contact info
+    first_name = st.text_input("First Name", key="first_name")
+    last_name = st.text_input("Last Name", key="last_name")
+    email = st.text_input("Email", key="email")
+    telephone = st.text_input("Telephone Number", key="telephone")
+    cell = st.text_input("Cell Number", key="cell")
 
-    # ---------------- Address ----------------
+    # Full address
     st.subheader("Address")
     ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros", "Berry Islands",
                "Bimini", "Cat Island", "Crooked Island", "Eleuthera", "Exuma",
                "Inagua", "Long Island", "Mayaguana", "Ragged Island", "Rum Cay", "San Salvador"]
-
-    if "island_selected" not in st.session_state:
-        st.session_state.island_selected = ISLANDS[0]
-    st.session_state.island_selected = st.selectbox("Island", ISLANDS, index=ISLANDS.index(st.session_state.island_selected), key="island_selected")
+    island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
 
     SETTLEMENTS = {
         "New Providence": ["Nassau", "Gros Islet", "Other"],
@@ -193,85 +179,53 @@ def registration_form():
         "Abaco": ["Marsh Harbour", "Hope Town", "Other"],
         # Add other islands as needed
     }
-    default_settlement = SETTLEMENTS.get(st.session_state.island_selected, ["Other"])[0]
-    if "settlement_selected" not in st.session_state:
-        st.session_state.settlement_selected = default_settlement
-    st.session_state.settlement_selected = st.selectbox(
-        "Settlement/District",
-        SETTLEMENTS.get(st.session_state.island_selected, ["Other"]),
-        index=SETTLEMENTS.get(st.session_state.island_selected, ["Other"]).index(st.session_state.settlement_selected),
-        key="settlement_selected"
-    )
+    settlement_selected = st.selectbox("Settlement/District", SETTLEMENTS.get(island_selected, ["Other"]), key="settlement_selected")
 
-    if "street_address" not in st.session_state:
-        st.session_state.street_address = ""
-    st.session_state.street_address = st.text_input("Street Address", value=st.session_state.street_address, key="street_address")
+    street_address = st.text_input("Street Address", key="street_address")
 
-    # ---------------- Communication Methods ----------------
+    # Communication methods
     st.write("Preferred Communication (Select all that apply)")
     methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-    if "selected_methods" not in st.session_state:
-        st.session_state.selected_methods = []
-
+    selected_methods = []
     cols = st.columns(2)
     for i, method in enumerate(methods):
         with cols[i % 2]:
-            checked = method in st.session_state.selected_methods
-            new_val = st.checkbox(method, value=checked, key=f"method_{method}")
-            if new_val and method not in st.session_state.selected_methods:
-                st.session_state.selected_methods.append(method)
-            elif not new_val and method in st.session_state.selected_methods:
-                st.session_state.selected_methods.remove(method)
+            if st.checkbox(method, key=f"method_{method}"):
+                selected_methods.append(method)
 
-    # ---------------- Save Button ----------------
     if st.button("💾 Save & Continue"):
-        # Validation
-        required_fields_filled = all([
-            st.session_state.first_name.strip(),
-            st.session_state.last_name.strip(),
-            st.session_state.email.strip(),
-            st.session_state.island_selected.strip(),
-            st.session_state.settlement_selected.strip(),
-            st.session_state.street_address.strip()
-        ])
-        methods_selected = len(st.session_state.selected_methods) > 0
-
-        if not (required_fields_filled and methods_selected):
+        if not all([first_name, last_name, email, selected_methods, island_selected, settlement_selected, street_address]):
             st.warning("Please fill all required fields and select at least one communication method.")
-            st.stop()
+            return
 
         # Save to DB
-        try:
-            with engine.begin() as conn:
-                conn.execute(text("""
-                    INSERT INTO registration_form (
-                        consent, first_name, last_name, email, telephone, cell,
-                        communication_methods, island, settlement, street_address, latitude, longitude
-                    ) VALUES (
-                        :consent, :first_name, :last_name, :email, :telephone, :cell,
-                        :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
-                    )
-                """), {
-                    "consent": consent_bool,
-                    "first_name": st.session_state.first_name.strip(),
-                    "last_name": st.session_state.last_name.strip(),
-                    "email": st.session_state.email.strip(),
-                    "telephone": st.session_state.telephone.strip(),
-                    "cell": st.session_state.cell.strip(),
-                    "communication_methods": st.session_state.selected_methods,
-                    "island": st.session_state.island_selected.strip(),
-                    "settlement": st.session_state.settlement_selected.strip(),
-                    "street_address": st.session_state.street_address.strip(),
-                    "latitude": st.session_state.latitude,
-                    "longitude": st.session_state.longitude
-                })
-            st.success("✅ Registration info saved!")
-            st.session_state.page = "availability"
-            st.experimental_rerun()
-        except Exception as e:
-            st.error(f"Failed to save registration: {e}")
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO registration_form (
+                    consent, first_name, last_name, email, telephone, cell,
+                    communication_methods, island, settlement, street_address, latitude, longitude
+                ) VALUES (
+                    :consent, :first_name, :last_name, :email, :telephone, :cell,
+                    :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
+                )
+            """), {
+                "consent": consent_bool,
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "telephone": telephone,
+                "cell": cell,
+                "communication_methods": selected_methods,
+                "island": island_selected,
+                "settlement": settlement_selected,
+                "street_address": street_address,
+                "latitude": st.session_state.latitude,
+                "longitude": st.session_state.longitude
+            })
 
-
+        st.success("✅ Registration info saved!")
+        st.session_state.page = "availability"
+        st.rerun()
 
 # -------------------------------
 # Availability Form
@@ -311,7 +265,7 @@ def availability_form():
 
         st.success("✅ Availability saved!")
         st.session_state.page = "confirmation"
-        st.experimental_rerun()
+        st.rerun()
 
 # -------------------------------
 # Confirmation Page
