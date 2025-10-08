@@ -1,39 +1,52 @@
+# census_app/db.py
+
 import os
 from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
 
-# Get Supabase connection mode from environment variable (optional)
-# Use "POOLER" to connect via Shared Pooler, default is Direct Connection
-DB_MODE = os.environ.get("DB_MODE", "DIRECT").upper()  # DIRECT or POOLER
+# Load environment variables from .env
+load_dotenv()
 
-# Credentials
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "test1234$")
-DB_HOST = os.environ.get("DB_HOST", "db.dtpioxkmtytszogsqyfa.supabase.co")
-DB_NAME = os.environ.get("DB_NAME", "registration_form")
+# Get database URL from environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Choose port based on connection mode
-if DB_MODE == "POOLER":
-    DB_PORT = os.environ.get("DB_PORT", "6543")  # Shared Pooler default
-else:
-    DB_PORT = os.environ.get("DB_PORT", "5432")  # Direct Connection default
+if not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL not set in environment variables or .env file")
 
-# Build the SQLAlchemy database URL
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Create SQLAlchemy engine
+engine = create_engine(
+    DATABASE_URL,
+    echo=True,       # Logs SQL statements; set False in production
+    future=True      # SQLAlchemy 2.0 style
+)
 
-# Create engine
-engine = create_engine(DATABASE_URL, echo=True)
-
-# Function to test connection
-def test_db_connection():
+# --------------------------
+# Test Connection Function
+# --------------------------
+def test_connection():
     try:
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT NOW();")).fetchone()
-            print(f"✅ DB Connected ({DB_MODE}):", result)
-            return True
+            result = conn.execute(text("SELECT version();"))
+            print("✅ Connected to database:", result.scalar())
     except Exception as e:
-        print(f"❌ DB Connection Failed ({DB_MODE}):", e)
-        return False
+        print("❌ [DB] Connection failed:", e)
 
-# Run test automatically if executed directly
+# --------------------------
+# Example Query Function
+# --------------------------
+def fetch_sample(query: str):
+    """Fetch results from a SQL query (for testing)."""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(query))
+            return result.fetchall()
+    except Exception as e:
+        print("❌ Query failed:", e)
+        return []
+
+# --------------------------
+# Run test if executed directly
+# --------------------------
 if __name__ == "__main__":
-    test_db_connection()
+    print("🔍 Testing database connection...")
+    test_connection()
