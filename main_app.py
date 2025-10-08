@@ -1,11 +1,29 @@
 import streamlit as st
-import pandas as pd
-from sqlalchemy import text
-from io import BytesIO
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
+from dotenv import load_dotenv
+import os
 
-# Import engine from db.py
-from db import engine
+# Load environment variables
+load_dotenv()
 
+st.title("Supabase Database Connection Test")
+
+# Get DATABASE_URL from environment
+DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+
+try:
+    # Create SQLAlchemy engine
+    engine = create_engine(DATABASE_URL, echo=False)
+
+    # Test connection
+    with engine.connect() as conn:
+        result = conn.execute("SELECT NOW();").fetchone()
+        st.success(f"✅ Connected to database successfully! Current time: {result[0]}")
+except OperationalError as e:
+    st.error(f"❌ Database connection failed: {e}")
+except Exception as e:
+    st.error(f"❌ An unexpected error occurred: {e}")
 # -------------------------------
 # Page State
 # -------------------------------
