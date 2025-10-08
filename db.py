@@ -1,35 +1,36 @@
+# census_app/registration_test/db.py
+
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
-# Load environment variables from .env (for local dev)
+# Load .env file locally (Render will use its environment variables automatically)
 load_dotenv()
 
-# --- Supabase credentials ---
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")  # Direct DB URL from Supabase (recommended)
+# Get DB credentials from environment variables
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "test1234$")
+DB_HOST = os.getenv("DB_HOST", "db.apbkobhfnmcqqzqeeqss.supabase.co")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "registration_form")
 
-# --- Local fallback ---
-LOCAL_DB_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/agri_census"
+# Build the SQLAlchemy database URL
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# --- Determine which connection to use ---
-if SUPABASE_DB_URL:
-    DATABASE_URL = SUPABASE_DB_URL
-elif SUPABASE_URL and SUPABASE_KEY:
-    # ⚠️ Replace the placeholder below with your actual Supabase credentials.
-    # Make sure to remove [ ] and quotes from password if it contains special characters.
-    DATABASE_URL = (
-        "postgresql+psycopg2://postgres.dtpioxkmtytszogsqyfa:"
-        "test1234$"
-        "@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
-    )
-else:
-    DATABASE_URL = LOCAL_DB_URL
+# Optional: print for debugging (remove in production)
+print("DATABASE_URL =", DATABASE_URL)
 
-# --- Create SQLAlchemy engine ---
-try:
-    engine = create_engine(DATABASE_URL, echo=False)
-    print("✅ Connected to database successfully.")
-except Exception as e:
-    print("❌ Database connection failed:", e)
+# Create SQLAlchemy engine
+engine = create_engine(DATABASE_URL, echo=True)
+
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Helper function to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
