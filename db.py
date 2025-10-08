@@ -1,30 +1,27 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
-from urllib.parse import quote_plus
+from sqlalchemy import create_engine, text
 
-# Load local .env (Render will use environment variables automatically)
-load_dotenv()
+# Get database URL from environment variable (Render / GitHub)
+# Fallback to direct URL if env variable is not set
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:test1234$@db.dtpioxkmtytszogsqyfa.supabase.co:5432/registration_form"
+)
 
-# Get credentials
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD", "test1234$"))  # encode special chars
-DB_HOST = os.getenv("DB_HOST", "aws-1-us-east-2.pooler.supabase.com")  # Supabase pooler host
-DB_PORT = os.getenv("DB_PORT", "5432")  # pooler port
-DB_NAME = os.getenv("DB_NAME", "registration_form")
-
-# Build SQLAlchemy URL
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-print("DATABASE_URL =", DATABASE_URL)  # Optional for debugging
-
-# Create engine & session
+# Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db():
-    db = SessionLocal()
+# Function to test DB connection
+def test_db_connection():
     try:
-        yield db
-    finally:
-        db.close()
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT NOW();")).fetchone()
+            print("✅ Database connected successfully:", result)
+            return True
+    except Exception as e:
+        print("❌ Database connection failed:", e)
+        return False
+
+# Run test automatically if this file is executed directly
+if __name__ == "__main__":
+    test_db_connection()
