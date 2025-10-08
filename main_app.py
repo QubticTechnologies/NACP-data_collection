@@ -1,21 +1,19 @@
+import os
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 from io import BytesIO
-import os
 from dotenv import load_dotenv
 
 # -------------------------------
-# Load environment variables
+# Load .env variables
 # -------------------------------
 load_dotenv()
-DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    st.error("DATABASE_URL not found in .env")
+    st.error("DATABASE_URL not found! Please set it in your .env file.")
+    st.stop()
 
-# -------------------------------
-# Create SQLAlchemy engine
-# -------------------------------
 engine = create_engine(DATABASE_URL, echo=True)
 
 # -------------------------------
@@ -32,20 +30,20 @@ if "admin_logged_in" not in st.session_state:
 ADMIN_USERS = {"admin": "admin123"}
 
 # -------------------------------
-# Reset session helper
+# Helper Functions
 # -------------------------------
 def reset_session():
     keys_to_reset = [
         "latitude", "longitude", "first_name", "last_name", "email",
-        "telephone", "cell", "selected_methods", "island_selected",
-        "settlement_selected", "street_address", "selected_days",
-        "selected_times", "consent_bool"
+        "telephone", "cell", "selected_methods",
+        "island_selected", "settlement_selected", "street_address",
+        "selected_days", "selected_times", "consent_bool"
     ]
     for key in keys_to_reset:
         if key in st.session_state:
             del st.session_state[key]
     st.success("Session reset!")
-    st.rerun()
+    st.experimental_rerun()
 
 # -------------------------------
 # Landing Page
@@ -53,19 +51,22 @@ def reset_session():
 def landing_page():
     st.set_page_config(page_title="NACP Bahamas", layout="wide")
     st.title("🇧🇸 NACP - National Agricultural Census Pilot Project")
-    st.markdown("""
-    Welcome to the National Agricultural Census Pilot Project (NACP).  
-    Please provide your location information to begin the registration process or login as admin.
-    """)
+    st.markdown(
+        "Welcome to the National Agricultural Census Pilot Project (NACP).  \n"
+        "Please provide your location information to begin the registration process or login as admin."
+    )
 
-    # Map input
-    st.session_state.latitude = st.number_input("Enter Latitude", value=25.0343, format="%.6f")
-    st.session_state.longitude = st.number_input("Enter Longitude", value=-77.3963, format="%.6f")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state.latitude = st.number_input("Enter your Latitude", value=25.0343, format="%.6f")
+        st.session_state.longitude = st.number_input("Enter your Longitude", value=-77.3963, format="%.6f")
+        if st.button("Show on Map"):
+            st.success(f"Location set: Latitude {st.session_state.latitude}, Longitude {st.session_state.longitude}")
 
-    if st.button("Show on Map"):
-        st.success(f"Location set: Latitude {st.session_state.latitude}, Longitude {st.session_state.longitude}")
-        df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
-        st.map(df, zoom=6)
+    with col2:
+        if st.session_state.latitude and st.session_state.longitude:
+            df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
+            st.map(df, zoom=6)
 
     st.markdown("---")
     col_reg, col_admin, col_reset = st.columns([1,1,1])
@@ -98,7 +99,7 @@ def admin_logout():
     if st.button("Logout"):
         st.session_state.admin_logged_in = False
         st.session_state.page = "landing"
-        st.rerun()
+        st.experimental_rerun()
 
 # -------------------------------
 # Admin Dashboard
@@ -107,11 +108,15 @@ def admin_dashboard():
     st.title("📊 NACP Admin Dashboard")
     admin_logout()
 
-    with engine.begin() as conn:
-        df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
+    try:
+        with engine.begin() as conn:
+            df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
+    except Exception as e:
+        st.error(f"Failed to fetch data: {e}")
+        return
 
     if st.button("🔄 Refresh Data"):
-        st.rerun()
+        st.experimental_rerun()
 
     st.subheader("Table of Registrations")
     st.dataframe(df)
@@ -126,16 +131,22 @@ def admin_dashboard():
         counts = {m: df['communication_methods'].apply(lambda x: m in x if x else False).sum() for m in methods}
         st.bar_chart(pd.Series(counts))
 
-    # Export
+    # Export CSV
+    st.subheader("Export Data")
     csv_data = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download CSV", csv_data, "registration_data.csv", "text/csv")
 
+    # Export Excel
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Data")
     output.seek(0)
-    st.download_button("Download Excel", output, "registration_data.xlsx",
-                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button(
+        "Download Excel",
+        output,
+        "registration_data.xlsx",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # -------------------------------
 # Registration Form
@@ -146,12 +157,13 @@ def registration_form():
 
     consent_options = ["I do not wish to participate", "I do wish to participate"]
     consent = st.radio("Consent", consent_options)
+
     if consent == "I do not wish to participate":
         st.warning("You cannot proceed without consenting.")
         return
-    consent_bool = True
 
-    # Contact info
+    consent_bool = consent == "I do wish to participate"
+
     first_name = st.text_input("First Name", key="first_name")
     last_name = st.text_input("Last Name", key="last_name")
     email = st.text_input("Email", key="email")
@@ -169,6 +181,7 @@ def registration_form():
         "New Providence": ["Nassau", "Gros Islet", "Other"],
         "Grand Bahama": ["Freeport", "West End", "Other"],
         "Abaco": ["Marsh Harbour", "Hope Town", "Other"],
+        # Add other islands as needed
     }
     settlement_selected = st.selectbox("Settlement/District", SETTLEMENTS.get(island_selected, ["Other"]), key="settlement_selected")
 
@@ -189,34 +202,35 @@ def registration_form():
             st.warning("Please fill all required fields and select at least one communication method.")
             return
 
-        # Safe INSERT with auto-increment
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO registration_form (
-                    consent, first_name, last_name, email, telephone, cell,
-                    communication_methods, island, settlement, street_address, latitude, longitude
-                ) VALUES (
-                    :consent, :first_name, :last_name, :email, :telephone, :cell,
-                    :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
-                )
-            """), {
-                "consent": consent_bool,
-                "first_name": first_name,
-                "last_name": last_name,
-                "email": email,
-                "telephone": telephone,
-                "cell": cell,
-                "communication_methods": selected_methods,
-                "island": island_selected,
-                "settlement": settlement_selected,
-                "street_address": street_address,
-                "latitude": st.session_state.latitude,
-                "longitude": st.session_state.longitude
-            })
-
-        st.success("✅ Registration info saved!")
-        st.session_state.page = "availability"
-        st.rerun()
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("""
+                    INSERT INTO registration_form (
+                        consent, first_name, last_name, email, telephone, cell,
+                        communication_methods, island, settlement, street_address, latitude, longitude
+                    ) VALUES (
+                        :consent, :first_name, :last_name, :email, :telephone, :cell,
+                        :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
+                    )
+                """), {
+                    "consent": consent_bool,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email,
+                    "telephone": telephone,
+                    "cell": cell,
+                    "communication_methods": selected_methods,
+                    "island": island_selected,
+                    "settlement": settlement_selected,
+                    "street_address": street_address,
+                    "latitude": st.session_state.latitude,
+                    "longitude": st.session_state.longitude
+                })
+            st.success("✅ Registration info saved!")
+            st.session_state.page = "availability"
+            st.experimental_rerun()
+        except Exception as e:
+            st.error(f"Failed to save registration: {e}")
 
 # -------------------------------
 # Availability Form
@@ -244,17 +258,19 @@ def availability_form():
         if not selected_days or not selected_times:
             st.warning("Please select at least one day and one time slot.")
             return
-        # Safe UPDATE: last inserted ID
         with engine.begin() as conn:
             conn.execute(text("""
                 UPDATE registration_form
                 SET available_days=:days, available_times=:times
-                WHERE id = (SELECT id FROM registration_form ORDER BY id DESC LIMIT 1)
-            """), {"days": selected_days, "times": selected_times})
+                WHERE id=(SELECT max(id) FROM registration_form)
+            """), {
+                "days": selected_days,
+                "times": selected_times
+            })
 
         st.success("✅ Availability saved!")
         st.session_state.page = "confirmation"
-        st.rerun()
+        st.experimental_rerun()
 
 # -------------------------------
 # Confirmation Page
@@ -263,7 +279,7 @@ def confirmation_page():
     st.subheader("✅ Registration Confirmation")
     with engine.begin() as conn:
         reg = conn.execute(text("""
-            SELECT * FROM registration_form ORDER BY id DESC LIMIT 1
+            SELECT * FROM registration_form WHERE id=(SELECT max(id) FROM registration_form)
         """)).mappings().fetchone()
         if reg:
             st.json(dict(reg))
