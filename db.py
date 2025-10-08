@@ -1,32 +1,35 @@
-from sqlalchemy import create_engine, text
 import os
+from sqlalchemy import create_engine
+from dotenv import load_dotenv
 
-# -------------------------------
-# Database Configuration
-# -------------------------------
-DB_USER = os.getenv("LOCAL_DB_USER", "postgres")
-DB_PASSWORD = os.getenv("LOCAL_DB_PASSWORD", "sherline10152")
-DB_HOST = os.getenv("LOCAL_DB_HOST", "localhost")
-DB_PORT = os.getenv("LOCAL_DB_PORT", "5432")
-DB_NAME = os.getenv("LOCAL_DB_NAME", "agri_census")
+# Load environment variables from .env (for local dev)
+load_dotenv()
 
-# Build Connection URL
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# --- Supabase credentials ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")  # Direct DB URL from Supabase (recommended)
 
-# Create Engine
-engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
+# --- Local fallback ---
+LOCAL_DB_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/agri_census"
 
-# -------------------------------
-# Test Database Connection
-# -------------------------------
-def test_connection():
-    try:
-        with engine.begin() as conn:
-            version = conn.execute(text("SELECT version();")).scalar()
-            print(f"✅ Connected to PostgreSQL: {version}")
-    except Exception as e:
-        print(f"❌ [DB] Connection failed: {e}")
+# --- Determine which connection to use ---
+if SUPABASE_DB_URL:
+    DATABASE_URL = SUPABASE_DB_URL
+elif SUPABASE_URL and SUPABASE_KEY:
+    # ⚠️ Replace the placeholder below with your actual Supabase credentials.
+    # Make sure to remove [ ] and quotes from password if it contains special characters.
+    DATABASE_URL = (
+        "postgresql+psycopg2://postgres.dtpioxkmtytszogsqyfa:"
+        "test1234$"
+        "@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
+    )
+else:
+    DATABASE_URL = LOCAL_DB_URL
 
-# Run test when loaded locally
-if __name__ == "__main__":
-    test_connection()
+# --- Create SQLAlchemy engine ---
+try:
+    engine = create_engine(DATABASE_URL, echo=False)
+    print("✅ Connected to database successfully.")
+except Exception as e:
+    print("❌ Database connection failed:", e)

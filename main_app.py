@@ -1,8 +1,22 @@
 import streamlit as st
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from io import BytesIO
-from census_app.db import engine
+import os
+from dotenv import load_dotenv
+
+# -------------------------------
+# Load environment variables
+# -------------------------------
+load_dotenv()
+DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+if not DATABASE_URL:
+    st.error("DATABASE_URL not found in .env")
+
+# -------------------------------
+# Create SQLAlchemy engine
+# -------------------------------
+engine = create_engine(DATABASE_URL, echo=True)
 
 # -------------------------------
 # Page State
@@ -15,19 +29,17 @@ if "admin_logged_in" not in st.session_state:
 # -------------------------------
 # Admin credentials
 # -------------------------------
-ADMIN_USERS = {
-    "admin": "admin123",
-}
+ADMIN_USERS = {"admin": "admin123"}
 
 # -------------------------------
-# Reset Session Helper
+# Reset session helper
 # -------------------------------
 def reset_session():
     keys_to_reset = [
         "latitude", "longitude", "first_name", "last_name", "email",
-        "telephone", "cell", "selected_methods",
-        "island_selected", "settlement_selected", "street_address",
-        "selected_days", "selected_times", "consent_bool"
+        "telephone", "cell", "selected_methods", "island_selected",
+        "settlement_selected", "street_address", "selected_days",
+        "selected_times", "consent_bool"
     ]
     for key in keys_to_reset:
         if key in st.session_state:
@@ -47,22 +59,13 @@ def landing_page():
     """)
 
     # Map input
-    if "latitude" not in st.session_state:
-        st.session_state.latitude = None
-    if "longitude" not in st.session_state:
-        st.session_state.longitude = None
+    st.session_state.latitude = st.number_input("Enter Latitude", value=25.0343, format="%.6f")
+    st.session_state.longitude = st.number_input("Enter Longitude", value=-77.3963, format="%.6f")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.latitude = st.number_input("Enter your Latitude", value=25.0343, format="%.6f")
-        st.session_state.longitude = st.number_input("Enter your Longitude", value=-77.3963, format="%.6f")
-        if st.button("Show on Map"):
-            st.success(f"Location set: Latitude {st.session_state.latitude}, Longitude {st.session_state.longitude}")
-
-    with col2:
-        if st.session_state.latitude and st.session_state.longitude:
-            df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
-            st.map(df, zoom=6)
+    if st.button("Show on Map"):
+        st.success(f"Location set: Latitude {st.session_state.latitude}, Longitude {st.session_state.longitude}")
+        df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
+        st.map(df, zoom=6)
 
     st.markdown("---")
     col_reg, col_admin, col_reset = st.columns([1,1,1])
@@ -102,21 +105,17 @@ def admin_logout():
 # -------------------------------
 def admin_dashboard():
     st.title("📊 NACP Admin Dashboard")
-    admin_logout()  # Logout button at top
+    admin_logout()
 
-    # Fetch data
     with engine.begin() as conn:
         df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
 
-    # Refresh button
     if st.button("🔄 Refresh Data"):
         st.rerun()
 
-    # Table
     st.subheader("Table of Registrations")
     st.dataframe(df)
 
-    # Charts
     if 'island' in df.columns:
         st.subheader("Registrations by Island")
         st.bar_chart(df['island'].value_counts())
@@ -128,7 +127,6 @@ def admin_dashboard():
         st.bar_chart(pd.Series(counts))
 
     # Export
-    st.subheader("Export Data")
     csv_data = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download CSV", csv_data, "registration_data.csv", "text/csv")
 
@@ -136,12 +134,8 @@ def admin_dashboard():
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Data")
     output.seek(0)
-    st.download_button(
-        "Download Excel",
-        output,
-        "registration_data.xlsx",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    st.download_button("Download Excel", output, "registration_data.xlsx",
+                       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # -------------------------------
 # Registration Form
@@ -152,12 +146,10 @@ def registration_form():
 
     consent_options = ["I do not wish to participate", "I do wish to participate"]
     consent = st.radio("Consent", consent_options)
-
     if consent == "I do not wish to participate":
         st.warning("You cannot proceed without consenting.")
         return
-
-    consent_bool = True if consent == "I do wish to participate" else False
+    consent_bool = True
 
     # Contact info
     first_name = st.text_input("First Name", key="first_name")
@@ -166,7 +158,7 @@ def registration_form():
     telephone = st.text_input("Telephone Number", key="telephone")
     cell = st.text_input("Cell Number", key="cell")
 
-    # Full address
+    # Address
     st.subheader("Address")
     ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros", "Berry Islands",
                "Bimini", "Cat Island", "Crooked Island", "Eleuthera", "Exuma",
@@ -177,7 +169,6 @@ def registration_form():
         "New Providence": ["Nassau", "Gros Islet", "Other"],
         "Grand Bahama": ["Freeport", "West End", "Other"],
         "Abaco": ["Marsh Harbour", "Hope Town", "Other"],
-        # Add other islands as needed
     }
     settlement_selected = st.selectbox("Settlement/District", SETTLEMENTS.get(island_selected, ["Other"]), key="settlement_selected")
 
@@ -198,7 +189,7 @@ def registration_form():
             st.warning("Please fill all required fields and select at least one communication method.")
             return
 
-        # Save to DB
+        # Safe INSERT with auto-increment
         with engine.begin() as conn:
             conn.execute(text("""
                 INSERT INTO registration_form (
@@ -253,15 +244,13 @@ def availability_form():
         if not selected_days or not selected_times:
             st.warning("Please select at least one day and one time slot.")
             return
+        # Safe UPDATE: last inserted ID
         with engine.begin() as conn:
             conn.execute(text("""
                 UPDATE registration_form
                 SET available_days=:days, available_times=:times
-                WHERE id=(SELECT max(id) FROM registration_form)
-            """), {
-                "days": selected_days,
-                "times": selected_times
-            })
+                WHERE id = (SELECT id FROM registration_form ORDER BY id DESC LIMIT 1)
+            """), {"days": selected_days, "times": selected_times})
 
         st.success("✅ Availability saved!")
         st.session_state.page = "confirmation"
@@ -274,7 +263,7 @@ def confirmation_page():
     st.subheader("✅ Registration Confirmation")
     with engine.begin() as conn:
         reg = conn.execute(text("""
-            SELECT * FROM registration_form WHERE id=(SELECT max(id) FROM registration_form)
+            SELECT * FROM registration_form ORDER BY id DESC LIMIT 1
         """)).mappings().fetchone()
         if reg:
             st.json(dict(reg))
