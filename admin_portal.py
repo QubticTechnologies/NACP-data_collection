@@ -15,7 +15,7 @@ load_dotenv()
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD", "test1234$"))  # encode special chars
 DB_HOST = os.getenv("DB_HOST", "aws-1-us-east-2.pooler.supabase.com")
-DB_PORT = os.getenv("DB_PORT", "6543")
+DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "registration_form")
 
 DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

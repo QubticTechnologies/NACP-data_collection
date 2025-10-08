@@ -11,7 +11,7 @@ load_dotenv()
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD", "test1234$"))  # encode special chars
 DB_HOST = os.getenv("DB_HOST", "aws-1-us-east-2.pooler.supabase.com")  # Supabase pooler host
-DB_PORT = os.getenv("DB_PORT", "6543")  # pooler port
+DB_PORT = os.getenv("DB_PORT", "5432")  # pooler port
 DB_NAME = os.getenv("DB_NAME", "registration_form")
 
 # Build SQLAlchemy URL
