@@ -151,6 +151,9 @@ def admin_dashboard():
 # -------------------------------
 # Registration Form
 # -------------------------------
+# -------------------------------
+# Registration Form
+# -------------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
     st.write("I understand my information will be kept strictly confidential and used only for statistical purposes.")
@@ -172,11 +175,7 @@ def registration_form():
     for field in ["first_name", "last_name", "email", "telephone", "cell"]:
         if field not in st.session_state:
             st.session_state[field] = ""
-    st.session_state.first_name = st.text_input("First Name", value=st.session_state.first_name, key="first_name")
-    st.session_state.last_name = st.text_input("Last Name", value=st.session_state.last_name, key="last_name")
-    st.session_state.email = st.text_input("Email", value=st.session_state.email, key="email")
-    st.session_state.telephone = st.text_input("Telephone Number", value=st.session_state.telephone, key="telephone")
-    st.session_state.cell = st.text_input("Cell Number", value=st.session_state.cell, key="cell")
+        st.session_state[field] = st.text_input(field.replace("_", " ").title(), value=st.session_state[field], key=field)
 
     # ---------------- Address ----------------
     st.subheader("Address")
@@ -227,17 +226,19 @@ def registration_form():
     # ---------------- Save Button ----------------
     if st.button("💾 Save & Continue"):
         # Validation
-        if not all([
-            st.session_state.first_name,
-            st.session_state.last_name,
-            st.session_state.email,
-            st.session_state.selected_methods,
-            st.session_state.island_selected,
-            st.session_state.settlement_selected,
-            st.session_state.street_address
-        ]):
+        required_fields_filled = all([
+            st.session_state.first_name.strip(),
+            st.session_state.last_name.strip(),
+            st.session_state.email.strip(),
+            st.session_state.island_selected.strip(),
+            st.session_state.settlement_selected.strip(),
+            st.session_state.street_address.strip()
+        ])
+        methods_selected = len(st.session_state.selected_methods) > 0
+
+        if not (required_fields_filled and methods_selected):
             st.warning("Please fill all required fields and select at least one communication method.")
-            return
+            st.stop()
 
         # Save to DB
         try:
@@ -252,15 +253,15 @@ def registration_form():
                     )
                 """), {
                     "consent": consent_bool,
-                    "first_name": st.session_state.first_name,
-                    "last_name": st.session_state.last_name,
-                    "email": st.session_state.email,
-                    "telephone": st.session_state.telephone,
-                    "cell": st.session_state.cell,
+                    "first_name": st.session_state.first_name.strip(),
+                    "last_name": st.session_state.last_name.strip(),
+                    "email": st.session_state.email.strip(),
+                    "telephone": st.session_state.telephone.strip(),
+                    "cell": st.session_state.cell.strip(),
                     "communication_methods": st.session_state.selected_methods,
-                    "island": st.session_state.island_selected,
-                    "settlement": st.session_state.settlement_selected,
-                    "street_address": st.session_state.street_address,
+                    "island": st.session_state.island_selected.strip(),
+                    "settlement": st.session_state.settlement_selected.strip(),
+                    "street_address": st.session_state.street_address.strip(),
                     "latitude": st.session_state.latitude,
                     "longitude": st.session_state.longitude
                 })
@@ -269,6 +270,7 @@ def registration_form():
             st.experimental_rerun()
         except Exception as e:
             st.error(f"Failed to save registration: {e}")
+
 
 
 # -------------------------------
