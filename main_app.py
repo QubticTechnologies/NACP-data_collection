@@ -1,4 +1,7 @@
 import streamlit as st
+
+import pandas as pd  # <-- add this
+
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from dotenv import load_dotenv
