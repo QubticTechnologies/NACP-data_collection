@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import text
 from io import BytesIO
-#from census_app.db import engine
+from db import engine
 
 # -------------------------------
 # Page State
