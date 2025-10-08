@@ -155,27 +155,38 @@ def registration_form():
     st.subheader("🌱 Registration Form")
     st.write("I understand my information will be kept strictly confidential and used only for statistical purposes.")
 
+    # ---------------- Consent ----------------
     consent_options = ["I do not wish to participate", "I do wish to participate"]
-    consent = st.radio("Consent", consent_options)
+    if "consent" not in st.session_state:
+        st.session_state.consent = consent_options[0]
 
-    if consent == "I do not wish to participate":
+    st.session_state.consent = st.radio("Consent", consent_options, index=consent_options.index(st.session_state.consent))
+
+    if st.session_state.consent == "I do not wish to participate":
         st.warning("You cannot proceed without consenting.")
         return
 
-    consent_bool = consent == "I do wish to participate"
+    consent_bool = st.session_state.consent == "I do wish to participate"
 
-    first_name = st.text_input("First Name", key="first_name")
-    last_name = st.text_input("Last Name", key="last_name")
-    email = st.text_input("Email", key="email")
-    telephone = st.text_input("Telephone Number", key="telephone")
-    cell = st.text_input("Cell Number", key="cell")
+    # ---------------- Contact Info ----------------
+    for field in ["first_name", "last_name", "email", "telephone", "cell"]:
+        if field not in st.session_state:
+            st.session_state[field] = ""
+    st.session_state.first_name = st.text_input("First Name", value=st.session_state.first_name, key="first_name")
+    st.session_state.last_name = st.text_input("Last Name", value=st.session_state.last_name, key="last_name")
+    st.session_state.email = st.text_input("Email", value=st.session_state.email, key="email")
+    st.session_state.telephone = st.text_input("Telephone Number", value=st.session_state.telephone, key="telephone")
+    st.session_state.cell = st.text_input("Cell Number", value=st.session_state.cell, key="cell")
 
-    # Address
+    # ---------------- Address ----------------
     st.subheader("Address")
     ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros", "Berry Islands",
                "Bimini", "Cat Island", "Crooked Island", "Eleuthera", "Exuma",
                "Inagua", "Long Island", "Mayaguana", "Ragged Island", "Rum Cay", "San Salvador"]
-    island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
+
+    if "island_selected" not in st.session_state:
+        st.session_state.island_selected = ISLANDS[0]
+    st.session_state.island_selected = st.selectbox("Island", ISLANDS, index=ISLANDS.index(st.session_state.island_selected), key="island_selected")
 
     SETTLEMENTS = {
         "New Providence": ["Nassau", "Gros Islet", "Other"],
@@ -183,25 +194,52 @@ def registration_form():
         "Abaco": ["Marsh Harbour", "Hope Town", "Other"],
         # Add other islands as needed
     }
-    settlement_selected = st.selectbox("Settlement/District", SETTLEMENTS.get(island_selected, ["Other"]), key="settlement_selected")
+    default_settlement = SETTLEMENTS.get(st.session_state.island_selected, ["Other"])[0]
+    if "settlement_selected" not in st.session_state:
+        st.session_state.settlement_selected = default_settlement
+    st.session_state.settlement_selected = st.selectbox(
+        "Settlement/District",
+        SETTLEMENTS.get(st.session_state.island_selected, ["Other"]),
+        index=SETTLEMENTS.get(st.session_state.island_selected, ["Other"]).index(st.session_state.settlement_selected),
+        key="settlement_selected"
+    )
 
-    street_address = st.text_input("Street Address", key="street_address")
+    if "street_address" not in st.session_state:
+        st.session_state.street_address = ""
+    st.session_state.street_address = st.text_input("Street Address", value=st.session_state.street_address, key="street_address")
 
-    # Communication methods
+    # ---------------- Communication Methods ----------------
     st.write("Preferred Communication (Select all that apply)")
     methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-    selected_methods = []
+    if "selected_methods" not in st.session_state:
+        st.session_state.selected_methods = []
+
     cols = st.columns(2)
     for i, method in enumerate(methods):
         with cols[i % 2]:
-            if st.checkbox(method, key=f"method_{method}"):
-                selected_methods.append(method)
+            checked = method in st.session_state.selected_methods
+            new_val = st.checkbox(method, value=checked, key=f"method_{method}")
+            if new_val and method not in st.session_state.selected_methods:
+                st.session_state.selected_methods.append(method)
+            elif not new_val and method in st.session_state.selected_methods:
+                st.session_state.selected_methods.remove(method)
 
+    # ---------------- Save Button ----------------
     if st.button("💾 Save & Continue"):
-        if not all([first_name, last_name, email, selected_methods, island_selected, settlement_selected, street_address]):
+        # Validation
+        if not all([
+            st.session_state.first_name,
+            st.session_state.last_name,
+            st.session_state.email,
+            st.session_state.selected_methods,
+            st.session_state.island_selected,
+            st.session_state.settlement_selected,
+            st.session_state.street_address
+        ]):
             st.warning("Please fill all required fields and select at least one communication method.")
             return
 
+        # Save to DB
         try:
             with engine.begin() as conn:
                 conn.execute(text("""
@@ -214,15 +252,15 @@ def registration_form():
                     )
                 """), {
                     "consent": consent_bool,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "email": email,
-                    "telephone": telephone,
-                    "cell": cell,
-                    "communication_methods": selected_methods,
-                    "island": island_selected,
-                    "settlement": settlement_selected,
-                    "street_address": street_address,
+                    "first_name": st.session_state.first_name,
+                    "last_name": st.session_state.last_name,
+                    "email": st.session_state.email,
+                    "telephone": st.session_state.telephone,
+                    "cell": st.session_state.cell,
+                    "communication_methods": st.session_state.selected_methods,
+                    "island": st.session_state.island_selected,
+                    "settlement": st.session_state.settlement_selected,
+                    "street_address": st.session_state.street_address,
                     "latitude": st.session_state.latitude,
                     "longitude": st.session_state.longitude
                 })
@@ -231,6 +269,7 @@ def registration_form():
             st.experimental_rerun()
         except Exception as e:
             st.error(f"Failed to save registration: {e}")
+
 
 # -------------------------------
 # Availability Form
