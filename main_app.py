@@ -1,4 +1,5 @@
 import streamlit as st
+from io import BytesIO
 
 import pandas as pd  # <-- add this
 
