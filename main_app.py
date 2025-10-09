@@ -146,108 +146,120 @@ def admin_dashboard():
 # -------------------------------
 # Registration form
 # -------------------------
+# -------------------------------
+# Registration form
+# -------------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
 
-    with st.form("registration_form", clear_on_submit=False):
-        # --- Step 1: Consent ---
-        st.markdown("**Please indicate your consent before continuing.**")
-        consent_options = ["I do not wish to participate", "I do wish to participate"]
-        consent = st.radio("Consent", consent_options, key="consent")
+    # Step 1: Consent
+    st.markdown("### 📝 Consent")
+    consent_options = ["I do not wish to participate", "I do wish to participate"]
+    consent = st.radio("Please indicate your consent:", consent_options, key="consent")
 
-        # Store consent in session
-        st.session_state["consent_bool"] = consent == "I do wish to participate"
+    st.session_state["consent_bool"] = consent == "I do wish to participate"
 
-        # If user declines, block form
-        if consent == "I do not wish to participate":
-            st.warning("You cannot proceed without consenting.")
-            submitted = st.form_submit_button("💾 Save & Continue")
+    if not st.session_state["consent_bool"]:
+        st.warning("⚠️ You must give consent before proceeding.")
+        return  # stop here until consent given
+
+    # Step 2: Personal Info
+    st.markdown("---")
+    st.markdown("### 👤 Personal Information")
+    first_name = st.text_input("First Name *", key="first_name")
+    last_name = st.text_input("Last Name *", key="last_name")
+    email = st.text_input("Email", key="email")
+    telephone = st.text_input("Telephone Number *", key="telephone")
+    cell = st.text_input("Cell Number", key="cell")
+
+    # Step 3: Address Info
+    st.markdown("### 📍 Address Information")
+    ISLANDS = [
+        "New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros",
+        "Berry Islands", "Bimini", "Cat Island", "Crooked Island",
+        "Eleuthera", "Exuma", "Inagua", "Long Island", "Mayaguana",
+        "Ragged Island", "Rum Cay", "San Salvador"
+    ]
+    island_selected = st.selectbox("Island *", ISLANDS, key="island_selected")
+
+    SETTLEMENTS = {
+        "New Providence": ["Nassau", "Fox Hill", "Carmichael", "Other"],
+        "Grand Bahama": ["Freeport", "West End", "East End", "Other"],
+        "Abaco": ["Marsh Harbour", "Hope Town", "Cooper’s Town", "Other"],
+        "Andros": ["Nicholl’s Town", "Fresh Creek", "Mangrove Cay", "Other"],
+        "Eleuthera": ["Governor’s Harbour", "Rock Sound", "Harbour Island", "Other"],
+    }
+    settlements = SETTLEMENTS.get(island_selected, ["Other"])
+    settlement_selected = st.selectbox("Settlement/District *", settlements, key="settlement_selected")
+    street_address = st.text_input("Street Address *", key="street_address")
+
+    # Step 4: Communication Methods
+    st.markdown("### 💬 Preferred Communication (Select all that apply)")
+    methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
+    cols = st.columns(2)
+    selected_methods = []
+    for i, method in enumerate(methods):
+        with cols[i % 2]:
+            if st.checkbox(method, value=False, key=f"method_{method}"):
+                selected_methods.append(method)
+
+    # Step 5: Interview Method
+    st.markdown("### 🗣️ Interview Method (Select all that apply)")
+    interview_methods = ["In-person Interview", "Phone Interview", "Self Reporting"]
+    interview_selected = []
+    cols2 = st.columns(3)
+    for i, method in enumerate(interview_methods):
+        with cols2[i]:
+            if st.checkbox(method, value=False, key=f"interview_{method}"):
+                interview_selected.append(method)
+
+    # Step 6: Save & Continue
+    if st.button("💾 Save & Continue"):
+        if not all([
+            first_name, last_name, telephone,
+            island_selected, settlement_selected, street_address
+        ]):
+            st.warning("⚠️ Please fill all required fields.")
             return
 
-        # --- Step 2: Registration Fields (only show if consented) ---
-        st.markdown("---")
-        st.markdown("### 👤 Personal Information")
+        if not selected_methods:
+            st.warning("⚠️ Please select at least one communication method.")
+            return
 
-        first_name = st.text_input("First Name", key="first_name")
-        last_name = st.text_input("Last Name", key="last_name")
-        email = st.text_input("Email", key="email")
-        telephone = st.text_input("Telephone Number", key="telephone")
-        cell = st.text_input("Cell Number", key="cell")
+        if not interview_selected:
+            st.warning("⚠️ Please select at least one interview method.")
+            return
 
-        # --- Address Info ---
-        st.markdown("### 📍 Address Information")
-        ISLANDS = [
-            "New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros",
-            "Berry Islands", "Bimini", "Cat Island", "Crooked Island",
-            "Eleuthera", "Exuma", "Inagua", "Long Island", "Mayaguana",
-            "Ragged Island", "Rum Cay", "San Salvador"
-        ]
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO registration_form (
+                    consent, first_name, last_name, email, telephone, cell,
+                    communication_methods, island, settlement, street_address,
+                    interview_methods, latitude, longitude
+                ) VALUES (
+                    :consent, :first_name, :last_name, :email, :telephone, :cell,
+                    :communication_methods, :island, :settlement, :street_address,
+                    :interview_methods, :latitude, :longitude
+                )
+            """), {
+                "consent": st.session_state["consent_bool"],
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "telephone": telephone,
+                "cell": cell,
+                "communication_methods": selected_methods,
+                "island": island_selected,
+                "settlement": settlement_selected,
+                "street_address": street_address,
+                "interview_methods": interview_selected,
+                "latitude": st.session_state.get("latitude"),
+                "longitude": st.session_state.get("longitude")
+            })
 
-        island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
-
-        SETTLEMENTS = {
-            "New Providence": ["Nassau", "Fox Hill", "Carmichael", "Other"],
-            "Grand Bahama": ["Freeport", "West End", "East End", "Other"],
-            "Abaco": ["Marsh Harbour", "Hope Town", "Cooper’s Town", "Other"],
-            "Andros": ["Nicholl’s Town", "Fresh Creek", "Mangrove Cay", "Other"],
-            "Eleuthera": ["Governor’s Harbour", "Rock Sound", "Harbour Island", "Other"],
-        }
-
-        # Fallback if island not in predefined list
-        settlements = SETTLEMENTS.get(island_selected, ["Other"])
-        settlement_selected = st.selectbox("Settlement/District", settlements, key="settlement_selected")
-
-        street_address = st.text_input("Street Address", key="street_address")
-
-        # --- Communication Methods ---
-        st.markdown("### 💬 Preferred Communication (Select all that apply)")
-        methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-        cols = st.columns(2)
-        for i, method in enumerate(methods):
-            with cols[i % 2]:
-                st.session_state[method] = st.checkbox(method, value=st.session_state.get(method, False))
-        selected_methods = [m for m in methods if st.session_state[m]]
-
-        # --- Step 3: Submit ---
-        submitted = st.form_submit_button("💾 Save & Continue")
-
-        if submitted:
-            if not all([
-                first_name, last_name, email, selected_methods,
-                island_selected, settlement_selected, street_address
-            ]):
-                st.warning("Please fill all required fields and select at least one communication method.")
-                return
-
-            with engine.begin() as conn:
-                conn.execute(text("""
-                    INSERT INTO registration_form (
-                        consent, first_name, last_name, email, telephone, cell,
-                        communication_methods, island, settlement, street_address,
-                        latitude, longitude
-                    ) VALUES (
-                        :consent, :first_name, :last_name, :email, :telephone, :cell,
-                        :communication_methods, :island, :settlement, :street_address,
-                        :latitude, :longitude
-                    )
-                """), {
-                    "consent": st.session_state["consent_bool"],
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "email": email,
-                    "telephone": telephone,
-                    "cell": cell,
-                    "communication_methods": selected_methods,
-                    "island": island_selected,
-                    "settlement": settlement_selected,
-                    "street_address": street_address,
-                    "latitude": st.session_state.get("latitude"),
-                    "longitude": st.session_state.get("longitude")
-                })
-
-            st.success("✅ Registration info saved!")
-            st.session_state.page = "availability"
-            st.rerun()
+        st.success("✅ Registration info saved successfully!")
+        st.session_state.page = "availability"
+        st.rerun()
 
 
 
