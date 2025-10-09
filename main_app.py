@@ -145,13 +145,28 @@ def admin_dashboard():
 
 # -------------------------------
 # Registration form
-# -------------------------------
+# -------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
 
     with st.form("registration_form", clear_on_submit=False):
+        # --- Step 1: Consent ---
+        st.markdown("**Please indicate your consent before continuing.**")
         consent_options = ["I do not wish to participate", "I do wish to participate"]
         consent = st.radio("Consent", consent_options, key="consent")
+
+        # Store in session
+        st.session_state["consent_bool"] = consent == "I do wish to participate"
+
+        # If user declines, block form
+        if consent == "I do not wish to participate":
+            st.warning("You cannot proceed without consenting.")
+            submitted = st.form_submit_button("💾 Save & Continue")
+            return
+
+        # --- Step 2: Registration Fields (only show if consented) ---
+        st.markdown("---")
+        st.markdown("### 👤 Personal Information")
 
         first_name = st.text_input("First Name", key="first_name")
         last_name = st.text_input("Last Name", key="last_name")
@@ -159,11 +174,13 @@ def registration_form():
         telephone = st.text_input("Telephone Number", key="telephone")
         cell = st.text_input("Cell Number", key="cell")
 
+        st.markdown("### 📍 Address Information")
         ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Andros", "Exuma"]
         island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
         settlement_selected = st.text_input("Settlement/District", key="settlement_selected")
         street_address = st.text_input("Street Address", key="street_address")
 
+        st.markdown("### 💬 Preferred Communication (Select all that apply)")
         methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
         cols = st.columns(2)
         for i, method in enumerate(methods):
@@ -171,13 +188,14 @@ def registration_form():
                 st.session_state[method] = st.checkbox(method, value=st.session_state.get(method, False))
         selected_methods = [m for m in methods if st.session_state[m]]
 
+        # --- Step 3: Submit ---
         submitted = st.form_submit_button("💾 Save & Continue")
 
         if submitted:
-            if consent == "I do not wish to participate":
-                st.warning("You cannot proceed without consenting.")
-                return
-            if not all([first_name, last_name, email, selected_methods, island_selected, settlement_selected, street_address]):
+            if not all([
+                first_name, last_name, email, selected_methods,
+                island_selected, settlement_selected, street_address
+            ]):
                 st.warning("Please fill all required fields and select at least one communication method.")
                 return
 
@@ -193,7 +211,7 @@ def registration_form():
                         :latitude, :longitude
                     )
                 """), {
-                    "consent": consent == "I do wish to participate",
+                    "consent": st.session_state["consent_bool"],
                     "first_name": first_name,
                     "last_name": last_name,
                     "email": email,
