@@ -148,94 +148,68 @@ def admin_dashboard():
 # -------------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
-    st.write("I understand my information will be kept strictly confidential and used only for statistical purposes.")
 
-    # Consent
-    consent_options = ["I do not wish to participate", "I do wish to participate"]
-    consent = st.radio("Consent", consent_options, key="consent")
-    if consent == "I do not wish to participate":
-        st.warning("You cannot proceed without consenting.")
-        return
-    st.session_state["consent_bool"] = consent == "I do wish to participate"
+    with st.form("registration_form", clear_on_submit=False):
+        consent_options = ["I do not wish to participate", "I do wish to participate"]
+        consent = st.radio("Consent", consent_options, key="consent")
 
-    # Contact info
-    first_name = st.text_input("First Name", key="first_name")
-    last_name = st.text_input("Last Name", key="last_name")
-    email = st.text_input("Email", key="email")
-    telephone = st.text_input("Telephone Number", key="telephone")
-    cell = st.text_input("Cell Number", key="cell")
+        first_name = st.text_input("First Name", key="first_name")
+        last_name = st.text_input("Last Name", key="last_name")
+        email = st.text_input("Email", key="email")
+        telephone = st.text_input("Telephone Number", key="telephone")
+        cell = st.text_input("Cell Number", key="cell")
 
-    # Address
-    st.subheader("Address")
-    ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros", "Berry Islands",
-               "Bimini", "Cat Island", "Crooked Island", "Eleuthera", "Exuma",
-               "Inagua", "Long Island", "Mayaguana", "Ragged Island", "Rum Cay", "San Salvador"]
-    island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
+        ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Andros", "Exuma"]
+        island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
+        settlement_selected = st.text_input("Settlement/District", key="settlement_selected")
+        street_address = st.text_input("Street Address", key="street_address")
 
-    SETTLEMENTS = {
-        "New Providence": ["Nassau", "Gros Islet", "Other"],
-        "Grand Bahama": ["Freeport", "West End", "Other"],
-        "Abaco": ["Marsh Harbour", "Hope Town", "Other"],
-    }
-    settlement_selected = st.selectbox(
-        "Settlement/District", SETTLEMENTS.get(island_selected, ["Other"]), key="settlement_selected"
-    )
+        methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
+        cols = st.columns(2)
+        for i, method in enumerate(methods):
+            with cols[i % 2]:
+                st.session_state[method] = st.checkbox(method, value=st.session_state.get(method, False))
+        selected_methods = [m for m in methods if st.session_state[m]]
 
-    street_address = st.text_input("Street Address", key="street_address")
+        submitted = st.form_submit_button("💾 Save & Continue")
 
-    # Communication methods
-    st.subheader("Preferred Communication (Select all that apply)")
-    methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
+        if submitted:
+            if consent == "I do not wish to participate":
+                st.warning("You cannot proceed without consenting.")
+                return
+            if not all([first_name, last_name, email, selected_methods, island_selected, settlement_selected, street_address]):
+                st.warning("Please fill all required fields and select at least one communication method.")
+                return
 
-    # Use same keys for checkbox and session_state
-    for method in methods:
-        if method not in st.session_state:
-            st.session_state[method] = False
-    cols = st.columns(2)
-    for i, method in enumerate(methods):
-        with cols[i % 2]:
-            st.session_state[method] = st.checkbox(method, value=st.session_state[method])
+            with engine.begin() as conn:
+                conn.execute(text("""
+                    INSERT INTO registration_form (
+                        consent, first_name, last_name, email, telephone, cell,
+                        communication_methods, island, settlement, street_address,
+                        latitude, longitude
+                    ) VALUES (
+                        :consent, :first_name, :last_name, :email, :telephone, :cell,
+                        :communication_methods, :island, :settlement, :street_address,
+                        :latitude, :longitude
+                    )
+                """), {
+                    "consent": consent == "I do wish to participate",
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email,
+                    "telephone": telephone,
+                    "cell": cell,
+                    "communication_methods": selected_methods,
+                    "island": island_selected,
+                    "settlement": settlement_selected,
+                    "street_address": street_address,
+                    "latitude": st.session_state.get("latitude"),
+                    "longitude": st.session_state.get("longitude")
+                })
 
-    selected_methods = [m for m in methods if st.session_state[m]]
-    st.session_state["selected_methods"] = selected_methods
-
-    # Save button
-    if st.button("💾 Save & Continue"):
-        if not all([
-            first_name, last_name, email, selected_methods,
-            island_selected, settlement_selected, street_address
-        ]):
-            st.warning("Please fill all required fields and select at least one communication method.")
-            return
-
-        # Save to DB
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO registration_form (
-                    consent, first_name, last_name, email, telephone, cell,
-                    communication_methods, island, settlement, street_address, latitude, longitude
-                ) VALUES (
-                    :consent, :first_name, :last_name, :email, :telephone, :cell,
-                    :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
-                )
-            """), {
-                "consent": st.session_state["consent_bool"],
-                "first_name": first_name,
-                "last_name": last_name,
-                "email": email,
-                "telephone": telephone,
-                "cell": cell,
-                "communication_methods": selected_methods,
-                "island": island_selected,
-                "settlement": settlement_selected,
-                "street_address": street_address,
-                "latitude": st.session_state.get("latitude"),
-                "longitude": st.session_state.get("longitude")
-            })
-
-        st.success("✅ Registration info saved!")
-        st.session_state.page = "availability"
-        st.rerun()
+            st.success("✅ Registration info saved!")
+            st.session_state.page = "availability"
+            st.rerun()
 
 
 
