@@ -1,9 +1,13 @@
 # main_app.py
+
 import streamlit as st
-from io import BytesIO
 import pandas as pd
 from sqlalchemy import text
-from db import connect_with_retries, engine  # Ensure db.py reads .env correctly
+from db import connect_with_retries, engine
+from geopy.geocoders import Nominatim
+import requests
+import re
+import pydeck as pdk
 
 # -------------------------------
 # Streamlit page config
@@ -11,7 +15,7 @@ from db import connect_with_retries, engine  # Ensure db.py reads .env correctly
 st.set_page_config(page_title="NACP Bahamas", layout="wide")
 
 # -------------------------------
-# Attempt DB connection
+# DB connection
 # -------------------------------
 engine = connect_with_retries(retries=5, delay=3)
 if engine is None:
@@ -22,10 +26,14 @@ else:
 # -------------------------------
 # Page state
 # -------------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "landing"
-if "admin_logged_in" not in st.session_state:
-    st.session_state.admin_logged_in = False
+for key, default in {
+    "page": "landing",
+    "admin_logged_in": False,
+    "latitude": None,
+    "longitude": None
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 # -------------------------------
 # Admin credentials
@@ -33,14 +41,16 @@ if "admin_logged_in" not in st.session_state:
 ADMIN_USERS = {"admin": "admin123"}
 
 # -------------------------------
-# Reset session helper
+# Reset session
 # -------------------------------
 def reset_session():
     keys_to_reset = [
-        "latitude", "longitude", "first_name", "last_name", "email",
-        "telephone", "cell", "selected_methods",
-        "island_selected", "settlement_selected", "street_address",
-        "selected_days", "selected_times", "consent_bool"
+        "latitude", "longitude", "auto_lat", "auto_lon",
+        "auto_island", "auto_settlement", "auto_street",
+        "first_name", "last_name", "email", "telephone", "cell",
+        "selected_methods", "island_selected", "settlement_selected",
+        "street_address", "selected_days", "selected_times",
+        "consent_bool"
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
@@ -48,39 +58,100 @@ def reset_session():
     st.rerun()
 
 # -------------------------------
+# Auto-detect location
+# -------------------------------
+def get_location():
+    try:
+        resp = requests.get("https://ipinfo.io/json", timeout=5)
+        data = resp.json()
+        loc = data.get("loc")  # "lat,lon"
+        if loc:
+            lat, lon = map(float, loc.split(","))
+            st.session_state["auto_lat"] = lat
+            st.session_state["auto_lon"] = lon
+
+            geolocator = Nominatim(user_agent="nacp_app")
+            location = geolocator.reverse((lat, lon), exactly_one=True, addressdetails=True)
+            if location and "address" in location.raw:
+                addr = location.raw["address"]
+                st.session_state["auto_island"] = addr.get("state") or addr.get("region")
+                st.session_state["auto_settlement"] = addr.get("city") or addr.get("town") or addr.get("village")
+                st.session_state["auto_street"] = addr.get("road") or addr.get("pedestrian") or ""
+            st.success(f"📍 Location detected: {lat}, {lon}")
+            return True
+    except Exception:
+        pass
+    st.warning("⚠️ Unable to auto-detect location. Please select manually or use dropdown.")
+    return False
+
+# -------------------------------
+# Interactive map
+# -------------------------------
+def show_map(lat=None, lon=None):
+    lat = lat or 25.0343
+    lon = lon or -77.3963
+    st.session_state.latitude = st.session_state.get("latitude") or lat
+    st.session_state.longitude = st.session_state.get("longitude") or lon
+
+    view_state = pdk.ViewState(
+        latitude=st.session_state.latitude,
+        longitude=st.session_state.longitude,
+        zoom=10,
+        pitch=0
+    )
+
+    marker = pdk.Layer(
+        "ScatterplotLayer",
+        data=pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}]),
+        get_position=["lon", "lat"],
+        get_color=[255, 0, 0],
+        get_radius=300,
+    )
+
+    r = pdk.Deck(layers=[marker], initial_view_state=view_state, tooltip={"text": "Click to set location"})
+    st.pydeck_chart(r)
+
+    st.markdown("**Adjust location manually by changing latitude/longitude below:**")
+    col_lat, col_lon = st.columns(2)
+    with col_lat:
+        st.number_input("Latitude", value=st.session_state.latitude, format="%.6f", key="latitude")
+    with col_lon:
+        st.number_input("Longitude", value=st.session_state.longitude, format="%.6f", key="longitude")
+
+# -------------------------------
 # Landing page
 # -------------------------------
 def landing_page():
-    st.title(" NACP - National Agricultural Census Pilot Project")
+    st.title("🌾 NACP - National Agricultural Census Pilot Project")
     st.markdown(
         "Welcome to the National Agricultural Census Pilot Project (NACP).  \n"
-        "Please provide your location information to begin the registration process or login as admin."
+        "Please provide your location information to begin registration or log in as admin."
     )
 
-    # Map input
-    st.session_state.latitude = st.number_input("Enter Latitude", value=25.0343, format="%.6f")
-    st.session_state.longitude = st.number_input("Enter Longitude", value=-77.3963, format="%.6f")
-    if st.button("Show on Map"):
-        st.success(f"Location set: Latitude {st.session_state.latitude}, Longitude {st.session_state.longitude}")
-        df = pd.DataFrame([{"lat": st.session_state.latitude, "lon": st.session_state.longitude}])
-        st.map(df, zoom=6)
+    if st.button("📍 Auto-detect my location"):
+        get_location()
+
+    show_map(
+        lat=st.session_state.get("auto_lat") or st.session_state.get("latitude"),
+        lon=st.session_state.get("auto_lon") or st.session_state.get("longitude")
+    )
 
     st.markdown("---")
-    col_reg, col_admin, col_reset = st.columns([1, 1, 1])
-    with col_reg:
+    col1, col2, col3 = st.columns(3)
+    with col1:
         if st.button("➡️ Start Registration"):
             st.session_state.page = "registration"
             st.rerun()
-    with col_admin:
+    with col2:
         if st.button("🔐 Admin Portal"):
             st.session_state.page = "admin_login"
             st.rerun()
-    with col_reset:
+    with col3:
         if st.button("♻️ Reset Session"):
             reset_session()
 
 # -------------------------------
-# Admin login/logout
+# Admin login
 # -------------------------------
 def admin_login():
     st.title("🔐 Admin Login")
@@ -95,84 +166,119 @@ def admin_login():
         else:
             st.error("❌ Invalid username or password")
 
-def admin_logout():
+# -------------------------------
+# Admin dashboard with pagination & tick selection
+# -------------------------------
+# -------------------------------
+# Admin dashboard with tick box in table
+# -------------------------------
+def admin_dashboard():
+    st.title("📊 NACP Admin Dashboard")
     if st.button("Logout"):
         st.session_state.admin_logged_in = False
         st.session_state.page = "landing"
         st.rerun()
 
-# -------------------------------
-# Admin dashboard
-# -------------------------------
-def admin_dashboard():
-    st.title("📊 NACP Admin Dashboard")
-    admin_logout()
+    TABLES = ["registration_form"]
+    rows_per_page = 20
 
-    with engine.begin() as conn:
-        df = pd.read_sql(text("SELECT * FROM registration_form ORDER BY id DESC"), conn)
+    for table_name in TABLES:
+        st.markdown("---")
+        st.subheader(f"📄 {table_name.capitalize()} Data")
 
-    if st.button("🔄 Refresh Data"):
-        st.rerun()
+        with engine.begin() as conn:
+            df = pd.read_sql(text(f"SELECT * FROM {table_name} ORDER BY id DESC"), conn)
 
-    st.subheader("Table of Registrations")
-    st.dataframe(df)
+        if df.empty:
+            st.info("No data found.")
+            continue
 
-    # Charts
-    if "island" in df.columns:
-        st.subheader("Registrations by Island")
-        st.bar_chart(df['island'].value_counts())
+        # Pagination
+        if f"{table_name}_page" not in st.session_state:
+            st.session_state[f"{table_name}_page"] = 0
+        page = st.session_state[f"{table_name}_page"]
+        total_pages = (len(df) - 1) // rows_per_page + 1
 
-    if "communication_methods" in df.columns:
-        st.subheader("Preferred Communication Methods")
-        methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-        counts = {m: df['communication_methods'].apply(lambda x: m in x if x else False).sum() for m in methods}
-        st.bar_chart(pd.Series(counts))
+        start_idx = page * rows_per_page
+        end_idx = start_idx + rows_per_page
+        df_page = df.iloc[start_idx:end_idx].copy()
 
-    # Export
-    st.subheader("Export Data")
-    st.download_button("Download CSV", df.to_csv(index=False).encode("utf-8"), "registration_data.csv", "text/csv")
+        # Add tick column for deletion
+        if "Delete" not in df_page.columns:
+            df_page["Delete"] = False
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Data")
-    output.seek(0)
-    st.download_button(
-        "Download Excel",
-        output,
-        "registration_data.xlsx",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        # Data editor with checkbox column
+        edited_df = st.data_editor(
+            df_page,
+            column_config={
+                "Delete": st.column_config.CheckboxColumn("Delete", help="Tick to delete row"),
+                "id": st.column_config.NumberColumn("ID", disabled=True)
+            },
+            use_container_width=True,
+            key=f"editor_{table_name}"
+        )
 
-# -------------------------------
-# Registration form
-# -------------------------
+        # Delete confirmation
+        if edited_df["Delete"].any():
+            st.warning(f"⚠️ You have selected {edited_df['Delete'].sum()} row(s) to delete.")
+            confirm_delete = st.radio(
+                "Are you sure you want to delete the selected row(s)?",
+                ["No", "Yes"],
+                horizontal=True,
+                key=f"confirm_delete_{table_name}"
+            )
+            if confirm_delete == "Yes" and st.button(f"✅ Delete Selected from {table_name}"):
+                rows_to_delete = edited_df[edited_df["Delete"]]
+                with engine.begin() as conn:
+                    for rid in rows_to_delete["id"]:
+                        conn.execute(text(f"DELETE FROM {table_name} WHERE id=:id"), {"id": rid})
+                st.success(f"✅ Deleted {len(rows_to_delete)} record(s).")
+                st.rerun()
+
+        # Pagination buttons
+        col_prev, col_next = st.columns([1, 1])
+        with col_prev:
+            if st.button("⬅️ Previous Page") and page > 0:
+                st.session_state[f"{table_name}_page"] -= 1
+                st.rerun()
+        with col_next:
+            if st.button("Next Page ➡️") and page < total_pages - 1:
+                st.session_state[f"{table_name}_page"] += 1
+                st.rerun()
+
+        # Registrations by island
+        if "island" in df.columns:
+            st.subheader("📍 Registrations by Island")
+            st.bar_chart(df["island"].value_counts())
+
+
 # -------------------------------
 # Registration form
 # -------------------------------
 def registration_form():
     st.subheader("🌱 Registration Form")
-
-    # Step 1: Consent
     st.markdown("### 📝 Consent")
-    consent_options = ["I do not wish to participate", "I do wish to participate"]
-    consent = st.radio("Please indicate your consent:", consent_options, key="consent")
-
+    consent = st.radio(
+        "Please indicate your consent:",
+        ["I do not wish to participate", "I do wish to participate"]
+    )
     st.session_state["consent_bool"] = consent == "I do wish to participate"
-
     if not st.session_state["consent_bool"]:
         st.warning("⚠️ You must give consent before proceeding.")
-        return  # stop here until consent given
+        return
 
-    # Step 2: Personal Info
-    st.markdown("---")
     st.markdown("### 👤 Personal Information")
-    first_name = st.text_input("First Name *", key="first_name")
-    last_name = st.text_input("Last Name *", key="last_name")
-    email = st.text_input("Email", key="email")
-    telephone = st.text_input("Telephone Number *", key="telephone")
-    cell = st.text_input("Cell Number", key="cell")
+    first_name = st.text_input("First Name *")
+    last_name = st.text_input("Last Name *")
+    email = st.text_input("Email *")
+    telephone = st.text_input("Telephone Number *")
+    cell = st.text_input("Cell Number")
 
-    # Step 3: Address Info
+    if email and not re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,4}$", email):
+        st.warning("⚠️ Invalid email format.")
+    if telephone and not re.match(r"^\(\d{3}\) \d{3}-\d{4}$", telephone):
+        st.warning("⚠️ Phone number must be in format (242) 456-4567")
+
     st.markdown("### 📍 Address Information")
     ISLANDS = [
         "New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros",
@@ -180,52 +286,29 @@ def registration_form():
         "Eleuthera", "Exuma", "Inagua", "Long Island", "Mayaguana",
         "Ragged Island", "Rum Cay", "San Salvador"
     ]
-    island_selected = st.selectbox("Island *", ISLANDS, key="island_selected")
+    island_default = st.session_state.get("auto_island", ISLANDS[0])
+    island_selected = st.selectbox("Island *", ISLANDS,
+                                   index=ISLANDS.index(island_default) if island_default in ISLANDS else 0)
+    settlement_default = st.session_state.get("auto_settlement", "Other")
+    settlement_selected = st.text_input("Settlement/District *", value=settlement_default)
+    street_default = st.session_state.get("auto_street", "")
+    street_address = st.text_input("Street Address *", value=street_default)
 
-    SETTLEMENTS = {
-        "New Providence": ["Nassau", "Fox Hill", "Carmichael", "Other"],
-        "Grand Bahama": ["Freeport", "West End", "East End", "Other"],
-        "Abaco": ["Marsh Harbour", "Hope Town", "Cooper’s Town", "Other"],
-        "Andros": ["Nicholl’s Town", "Fresh Creek", "Mangrove Cay", "Other"],
-        "Eleuthera": ["Governor’s Harbour", "Rock Sound", "Harbour Island", "Other"],
-    }
-    settlements = SETTLEMENTS.get(island_selected, ["Other"])
-    settlement_selected = st.selectbox("Settlement/District *", settlements, key="settlement_selected")
-    street_address = st.text_input("Street Address *", key="street_address")
+    st.markdown("### 💬 Preferred Communication")
+    comm_methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
+    selected_methods = [m for m in comm_methods if st.checkbox(m, value=False, key=f"m_{m}")]
 
-    # Step 4: Communication Methods
-    st.markdown("### 💬 Preferred Communication (Select all that apply)")
-    methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-    cols = st.columns(2)
-    selected_methods = []
-    for i, method in enumerate(methods):
-        with cols[i % 2]:
-            if st.checkbox(method, value=False, key=f"method_{method}"):
-                selected_methods.append(method)
-
-    # Step 5: Interview Method
-    st.markdown("### 🗣️ Interview Method (Select all that apply)")
+    st.markdown("### 🗣️ Interview Method")
     interview_methods = ["In-person Interview", "Phone Interview", "Self Reporting"]
-    interview_selected = []
-    cols2 = st.columns(3)
-    for i, method in enumerate(interview_methods):
-        with cols2[i]:
-            if st.checkbox(method, value=False, key=f"interview_{method}"):
-                interview_selected.append(method)
+    interview_selected = [m for m in interview_methods if st.checkbox(m, value=False, key=f"i_{m}")]
 
-    # Step 6: Save & Continue
     if st.button("💾 Save & Continue"):
-        if not all([
-            first_name, last_name, telephone,
-            island_selected, settlement_selected, street_address
-        ]):
-            st.warning("⚠️ Please fill all required fields.")
+        if not all([first_name, last_name, telephone, email, island_selected, settlement_selected, street_address]):
+            st.warning("⚠️ Please complete all required fields.")
             return
-
         if not selected_methods:
             st.warning("⚠️ Please select at least one communication method.")
             return
-
         if not interview_selected:
             st.warning("⚠️ Please select at least one interview method.")
             return
@@ -253,49 +336,37 @@ def registration_form():
                 "settlement": settlement_selected,
                 "street_address": street_address,
                 "interview_methods": interview_selected,
-                "latitude": st.session_state.get("latitude"),
-                "longitude": st.session_state.get("longitude")
+                "latitude": st.session_state.get("latitude") or st.session_state.get("auto_lat"),
+                "longitude": st.session_state.get("longitude") or st.session_state.get("auto_lon")
             })
-
-        st.success("✅ Registration info saved successfully!")
+        st.success("✅ Registration saved successfully!")
         st.session_state.page = "availability"
         st.rerun()
-
-
-
 
 # -------------------------------
 # Availability form
 # -------------------------------
 def availability_form():
-    st.subheader("🕒 Best Time to Visit You")
+    st.subheader("🕒 Availability")
     days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-    selected_days = []
-    cols = st.columns(4)
-    for i, day in enumerate(days):
-        with cols[i % 4]:
-            if st.checkbox(day, key=f"day_{day}"):
-                selected_days.append(day)
-
+    selected_days = [d for d in days if st.checkbox(d, key=f"d_{d}")]
     time_slots = ["Morning (7-10am)", "Midday (11-1pm)", "Afternoon (2-5pm)", "Evening (6-8pm)"]
-    selected_times = []
-    cols2 = st.columns(2)
-    for i, slot in enumerate(time_slots):
-        with cols2[i % 2]:
-            if st.checkbox(slot, key=f"time_{slot}"):
-                selected_times.append(slot)
+    selected_times = [t for t in time_slots if st.checkbox(t, key=f"t_{t}")]
 
     if st.button("💾 Save Availability"):
         if not selected_days or not selected_times:
             st.warning("Please select at least one day and one time slot.")
             return
+        selected_days_sorted = [d for d in days if d in selected_days]
+
         with engine.begin() as conn:
             conn.execute(text("""
                 UPDATE registration_form
                 SET available_days=:days, available_times=:times
                 WHERE id=(SELECT max(id) FROM registration_form)
-            """), {"days": selected_days, "times": selected_times})
-        st.success("✅ Availability saved!")
+            """), {"days": selected_days_sorted, "times": selected_times})
+
+        st.success("✅ Availability saved successfully!")
         st.session_state.page = "confirmation"
         st.rerun()
 
@@ -303,16 +374,16 @@ def availability_form():
 # Confirmation page
 # -------------------------------
 def confirmation_page():
-    st.subheader("✅ Registration Confirmation")
+    st.subheader("🎉 Thank You for registering for the NACP!")
     with engine.begin() as conn:
-        reg = conn.execute(text("SELECT * FROM registration_form WHERE id=(SELECT max(id) FROM registration_form)")).mappings().fetchone()
+        reg = conn.execute(text("SELECT * FROM registration_form ORDER BY id DESC LIMIT 1")).mappings().fetchone()
         if reg:
             st.json(dict(reg))
         else:
-            st.warning("No registration data found.")
+            st.warning("No registration found.")
 
 # -------------------------------
-# Page routing
+# Routing
 # -------------------------------
 page_map = {
     "landing": landing_page,
@@ -322,5 +393,4 @@ page_map = {
     "admin_login": admin_login,
     "admin_dashboard": lambda: admin_dashboard() if st.session_state.admin_logged_in else st.warning("Please login as admin first.")
 }
-
 page_map.get(st.session_state.page, landing_page)()
