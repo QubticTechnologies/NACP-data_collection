@@ -155,7 +155,7 @@ def registration_form():
         consent_options = ["I do not wish to participate", "I do wish to participate"]
         consent = st.radio("Consent", consent_options, key="consent")
 
-        # Store in session
+        # Store consent in session
         st.session_state["consent_bool"] = consent == "I do wish to participate"
 
         # If user declines, block form
@@ -174,12 +174,32 @@ def registration_form():
         telephone = st.text_input("Telephone Number", key="telephone")
         cell = st.text_input("Cell Number", key="cell")
 
+        # --- Address Info ---
         st.markdown("### 📍 Address Information")
-        ISLANDS = ["New Providence", "Grand Bahama", "Abaco", "Andros", "Exuma"]
+        ISLANDS = [
+            "New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros",
+            "Berry Islands", "Bimini", "Cat Island", "Crooked Island",
+            "Eleuthera", "Exuma", "Inagua", "Long Island", "Mayaguana",
+            "Ragged Island", "Rum Cay", "San Salvador"
+        ]
+
         island_selected = st.selectbox("Island", ISLANDS, key="island_selected")
-        settlement_selected = st.text_input("Settlement/District", key="settlement_selected")
+
+        SETTLEMENTS = {
+            "New Providence": ["Nassau", "Fox Hill", "Carmichael", "Other"],
+            "Grand Bahama": ["Freeport", "West End", "East End", "Other"],
+            "Abaco": ["Marsh Harbour", "Hope Town", "Cooper’s Town", "Other"],
+            "Andros": ["Nicholl’s Town", "Fresh Creek", "Mangrove Cay", "Other"],
+            "Eleuthera": ["Governor’s Harbour", "Rock Sound", "Harbour Island", "Other"],
+        }
+
+        # Fallback if island not in predefined list
+        settlements = SETTLEMENTS.get(island_selected, ["Other"])
+        settlement_selected = st.selectbox("Settlement/District", settlements, key="settlement_selected")
+
         street_address = st.text_input("Street Address", key="street_address")
 
+        # --- Communication Methods ---
         st.markdown("### 💬 Preferred Communication (Select all that apply)")
         methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
         cols = st.columns(2)
@@ -228,6 +248,7 @@ def registration_form():
             st.success("✅ Registration info saved!")
             st.session_state.page = "availability"
             st.rerun()
+
 
 
 
