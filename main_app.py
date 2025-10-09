@@ -7,26 +7,20 @@ from sqlalchemy.exc import OperationalError
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
-load_dotenv()
+# main_app.py
+import streamlit as st
+from db import connect_with_retries, engine
+from sqlalchemy import text
+from db import connect_with_retries, engine
 
-st.title("Supabase Database Connection Test")
+# Attempt DB connection
+engine = connect_with_retries(retries=5, delay=3)
+if engine is None:
+    st.error("❌ Unable to connect to the database. Please try again later.")
+else:
+    st.success("✅ Connected to the database!")
 
-# Get DATABASE_URL from environment
-DATABASE_URL = os.getenv("SUPABASE_DB_URL")
 
-try:
-    # Create SQLAlchemy engine
-    engine = create_engine(DATABASE_URL, echo=False)
-
-    # Test connection
-    with engine.connect() as conn:
-        result = conn.execute("SELECT NOW();").fetchone()
-        st.success(f"✅ Connected to database successfully! Current time: {result[0]}")
-except OperationalError as e:
-    st.error(f"❌ Database connection failed: {e}")
-except Exception as e:
-    st.error(f"❌ An unexpected error occurred: {e}")
 # -------------------------------
 # Page State
 # -------------------------------

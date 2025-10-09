@@ -1,43 +1,36 @@
 # db.py
 import os
-import time
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from dotenv import load_dotenv
+import time
 
-# Load environment variables
-load_dotenv()
+load_dotenv()  # load .env file
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DB_USER = os.getenv("DB_USER", "agri_data_user")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "lo7GjOG52LrKPTlk2wDEnNgq1965WG0Q")
+DB_HOST = os.getenv("DB_HOST", "dpg-d3jgpvc9c44c73bs8m60-a.oregon-postgres.render.com")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "agri_data")
 
-# Create engine with pool_pre_ping to avoid stale connections
-engine = create_engine(
-    DATABASE_URL,
-    echo=True,
-    pool_pre_ping=True,  # Checks if connection is alive before use
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,  # Wait up to 30s for a connection
-)
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-def test_connection(retries=3, delay=5):
-    """
-    Test DB connection with retries for Shared Pooler.
-    """
-    for attempt in range(1, retries + 1):
+engine = None
+
+def connect_with_retries(retries=5, delay=3):
+    global engine
+    attempt = 0
+    while attempt < retries:
         try:
+            engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+            # simple test
             with engine.connect() as conn:
-                result = conn.execute(text("SELECT version();"))
-                print("✅ Connected to DB:", result.fetchone())
-                return True
+                conn.execute(text("SELECT 1"))
+            print("✅ Database connected!")
+            return engine
         except OperationalError as e:
-            print(f"❌ Attempt {attempt}: Connection failed:", e)
-            if attempt < retries:
-                print(f"⏳ Retrying in {delay}s...")
-                time.sleep(delay)
-            else:
-                print("❌ All connection attempts failed.")
-                return False
-
-if __name__ == "__main__":
-    test_connection()
+            print(f"⚠️ Database connection failed (attempt {attempt+1}/{retries}): {e}")
+            time.sleep(delay)
+            attempt += 1
+    print("❌ Could not connect to database after retries.")
+    return None
