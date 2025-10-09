@@ -189,42 +189,47 @@ def registration_form():
     street_address = st.text_input("Street Address", key="street_address")
 
     # Communication methods
-    st.write("Preferred Communication (Select all that apply)")
-    methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
-    selected_methods = st.session_state.get("selected_methods", [])
+    # Communication methods
 
-    cols = st.columns(2)
-    for i, method in enumerate(methods):
-        with cols[i % 2]:
-            checked = method in selected_methods
-            if st.checkbox(method, key=f"method_{method}", value=checked):
-                if method not in selected_methods:
-                    selected_methods.append(method)
-            else:
-                if method in selected_methods:
-                    selected_methods.remove(method)
-    st.session_state["selected_methods"] = selected_methods
 
-    # Save button
-    if st.button("💾 Save & Continue"):
-        if not all([
-            first_name, last_name, email, st.session_state["selected_methods"],
-            island_selected, settlement_selected, street_address
-        ]):
-            st.warning("Please fill all required fields and select at least one communication method.")
-            return
+st.write("Preferred Communication (Select all that apply)")
+methods = ["WhatsApp", "Phone Call", "Email", "Text Message"]
 
+# Initialize session_state for checkboxes
+for method in methods:
+    if f"method_{method}" not in st.session_state:
+        st.session_state[f"method_{method}"] = False
+
+cols = st.columns(2)
+for i, method in enumerate(methods):
+    with cols[i % 2]:
+        st.session_state[f"method_{method}"] = st.checkbox(
+            method, value=st.session_state[f"method_{method}"], key=f"method_{method}_ui"
+        )
+
+# Gather selected methods
+selected_methods = [m for m in methods if st.session_state[f"method_{m}"]]
+st.session_state["selected_methods"] = selected_methods
+
+# Save button
+if st.button("💾 Save & Continue"):
+    if not all([
+        first_name, last_name, email, st.session_state["selected_methods"],
+        island_selected, settlement_selected, street_address
+    ]):
+        st.warning("Please fill all required fields and select at least one communication method.")
+    else:
         # Save to DB
         with engine.begin() as conn:
             conn.execute(text("""
-                INSERT INTO registration_form (
-                    consent, first_name, last_name, email, telephone, cell,
-                    communication_methods, island, settlement, street_address, latitude, longitude
-                ) VALUES (
-                    :consent, :first_name, :last_name, :email, :telephone, :cell,
-                    :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
-                )
-            """), {
+                  INSERT INTO registration_form (
+                      consent, first_name, last_name, email, telephone, cell,
+                      communication_methods, island, settlement, street_address, latitude, longitude
+                  ) VALUES (
+                      :consent, :first_name, :last_name, :email, :telephone, :cell,
+                      :communication_methods, :island, :settlement, :street_address, :latitude, :longitude
+                  )
+              """), {
                 "consent": consent_bool,
                 "first_name": first_name,
                 "last_name": last_name,
@@ -238,7 +243,6 @@ def registration_form():
                 "latitude": st.session_state.get("latitude"),
                 "longitude": st.session_state.get("longitude")
             })
-
         st.success("✅ Registration info saved!")
         st.session_state.page = "availability"
         st.rerun()
