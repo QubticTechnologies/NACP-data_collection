@@ -1,0 +1,21 @@
+{
+    "pending_users_last_week": {
+        "conditions": [
+            ["status", "=", "pending"],
+            ["days_since_creation", ">", "7"]
+        ],
+        "connector": "AND"
+    },
+    "holders_with_large_farms": {
+        "conditions": [
+            ["land_size", ">", "50"]
+        ],
+        "connector": "AND"
+    },
+    "recently_updated_users": {
+        "conditions": [
+            ["last_updated", ">=", "2025-09-01"]
+        ],
+        "connector": "AND"
+    }
+}

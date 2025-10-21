@@ -1,0 +1,139 @@
+ ┌─────────────┐
+ │  Database   │
+ │  (Postgres) │
+ └─────┬───────┘
+       │
+       ├── users
+       ├── holders
+       ├── farms
+       ├── household_information
+       ├── household_summary
+       ├── agents
+       └── alerts
+
+
+
+
+
+
+
+                 ┌───────────────┐
+                 │  User Login   │
+                 │  (Streamlit) │
+                 └───────┬───────┘
+                         │
+        ┌────────────────┴───────────────┐
+        │                                │
+   ┌───────────────┐               ┌───────────────┐
+   │  Admin Login  │               │  Agent/Farmer │
+   └───────┬───────┘               └───────┬───────┘
+           │                                │
+   ┌───────▼────────┐                ┌─────▼────────┐
+   │ Admin Dashboard│                │  Role Sidebar│
+   │(admin_dashboard)│               │  (agent/holder)│
+   └───────┬────────┘                └─────┬────────┘
+           │                                │
+ ┌─────────▼─────────────┐         ┌────────▼─────────┐
+ │ Manage Users/Holders   │         │ Survey Sections  │
+ │ - Approve/Reject/Delete│         │(survey_sidebar) │
+ │ - Bulk Actions         │         │ 1. Holder Info  │
+ │ - AG-Grid, Filters     │         │ 2. Household Info│
+ ├─────────┬─────────────┤         │ 3. Holding Labor │
+ │ Graphs & Reports      │         └────────┬─────────┘
+ │ - Summary/Detailed    │                  │
+ │ - Charts (Status/Role)│                 ▼
+ │ - CSV Export          │          ┌──────────────┐
+ │ - Last 24h Updates    │          │ Holder Dash  │
+ ├─────────┬─────────────┤          │(holder_dashboard)│
+ │ Alerts Monitor        │          │ Map of Holdings │
+ │ - Notifications       │          └──────────────┘
+ └───────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
+
+
+Agri Census System
+│
+├── 1. User Access
+│   ├── Admin
+│   │   ├── Purpose: Manage the system, users, and survey progress
+│   │   ├── Functions:
+│   │   │   ├── Approve/Reject/Delete Users & Holders
+│   │   │   ├── Advanced Query & Filters
+│   │   │   ├── Graphs & Reports (Summary, Detailed, Status, Role)
+│   │   │   └── Alerts Monitor & Notifications
+│   │
+│   ├── Agent
+│   │   ├── Purpose: Monitor and manage assigned holders in the field
+│   │   ├── Functions:
+│   │   │   ├── View assigned holders
+│   │   │   ├── Track survey completion
+│   │   │   └── Export holder/household data
+│   │
+│   └── Holder/Farmer
+│       ├── Purpose: Fill survey forms and manage own holdings
+│       ├── Functions:
+│       │   ├── Survey Sections:
+│       │   │   ├── Holder Information
+│       │   │   ├── Household Information
+│       │   │   └── Holding Labour
+│       │   └── Map of Holdings (view geolocations)
+│
+├── 2. Survey System
+│   ├── Purpose: Collect accurate agricultural census data
+│   ├── Components:
+│   │   ├── Survey Sidebar (progress, navigation)
+│   │   ├── Forms & Validation
+│   │   └── Data Storage:
+│   │       ├── household_information
+│   │       └── household_summary
+│
+├── 3. Dashboard System
+│   ├── Purpose: Display and manage data for each role
+│   ├── Admin Dashboard:
+│   │   ├── Users & Holders Management
+│   │   ├── Graphs & Reports
+│   │   └── Alerts Monitor
+│   ├── Agent Dashboard:
+│   │   └── Assigned Holders Tracking
+│   └── Holder Dashboard:
+│       ├── Survey Progress
+│       └── Map of Holdings
+│
+├── 4. Data & Database
+│   ├── Purpose: Central storage for all census data
+│   ├── Tables:
+│   │   ├── users
+│   │   ├── holders
+│   │   ├── farms
+│   │   ├── household_information
+│   │   ├── household_summary
+│   │   ├── agents
+│   │   └── alerts
+│   └── Data Use:
+│       ├── Dashboards
+│       ├── Reports & Graphs
+│       └── Alerts & Notifications
+│
+└── 5. Reporting & Analytics
+    ├── Purpose: Provide insights for decision making
+    ├── Reports:
+    │   ├── Summary (total holders, farms, agents)
+    │   └── Detailed (holder, farm, agent info)
+    ├── Graphs:
+    │   ├── Status Distribution
+    │   ├── Role Distribution
+    │   └── Recent Updates
+    └── Export:
+        ├── CSV
+        └── PDF
+

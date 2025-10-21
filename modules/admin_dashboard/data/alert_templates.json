@@ -1,0 +1,14 @@
+{
+    "pending_users_over_7_days": {
+        "condition": "status = 'pending' AND days_since_creation > 7",
+        "message": "Users pending approval for over 7 days"
+    },
+    "holders_missing_survey": {
+        "condition": "survey_completed = 'no'",
+        "message": "Holder has not completed the survey"
+    },
+    "rejected_users_alert": {
+        "condition": "status = 'rejected'",
+        "message": "Users have been rejected recently"
+    }
+}
