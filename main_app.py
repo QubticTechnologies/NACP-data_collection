@@ -9,7 +9,6 @@ from geopy.geocoders import Nominatim
 import requests
 import re
 import pydeck as pdk
-from streamlit_js_eval import get_geolocation, streamlit_js_eval
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
 import json
@@ -25,6 +24,17 @@ if 'RENDER' in os.environ:
     pass
 
 # =============================
+# STREAMLIT_JS_EVAL FALLBACK
+# =============================
+try:
+    from streamlit_js_eval import get_geolocation, streamlit_js_eval
+
+    STREAMLIT_JS_AVAILABLE = True
+except ImportError:
+    STREAMLIT_JS_AVAILABLE = False
+    st.warning("⚠️ streamlit_js_eval not available - using fallback location methods")
+
+# =============================
 # STREAMLIT PAGE CONFIG
 # =============================
 st.set_page_config(page_title="NACP Bahamas", layout="wide")
@@ -36,8 +46,6 @@ engine = connect_with_retries(retries=5, delay=3)
 if engine is None:
     st.error("❌ Unable to connect to the database. Please try again later.")
     st.stop()
-
-# ... rest of your existing code continues exactly as you have it ...
 
 # =============================
 # SESSION STATE DEFAULTS
@@ -108,6 +116,10 @@ def format_array_for_display(data):
 
 def get_browser_location():
     """Get high-accuracy GPS location from browser using HTML5 Geolocation API"""
+    if not STREAMLIT_JS_AVAILABLE:
+        st.warning("🚫 High-accuracy GPS not available in this environment. Using IP-based location.")
+        return get_enhanced_ip_location()
+
     try:
         st.info("📍 Requesting GPS access from your browser...")
 
@@ -174,6 +186,9 @@ def get_browser_location():
     except Exception as e:
         st.error(f"❌ Browser GPS Error: {e}")
         return get_enhanced_ip_location()
+
+
+# ... rest of your existing code remains exactly the same ...
 
 
 def get_enhanced_ip_location():
