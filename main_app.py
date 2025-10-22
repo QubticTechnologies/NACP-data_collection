@@ -1,5 +1,6 @@
 # main_app.py - NACP Bahamas Complete Application
 
+import os
 import streamlit as st
 import pandas as pd
 from sqlalchemy import text
@@ -14,6 +15,16 @@ import time
 import json
 
 # =============================
+# RENDER DEPLOYMENT FIX
+# =============================
+# Render requires binding to the PORT environment variable
+if 'RENDER' in os.environ:
+    # This ensures the app works on Render
+    port = int(os.environ.get('PORT', 10000))
+    # Streamlit automatically handles port binding in newer versions
+    pass
+
+# =============================
 # STREAMLIT PAGE CONFIG
 # =============================
 st.set_page_config(page_title="NACP Bahamas", layout="wide")
@@ -25,6 +36,8 @@ engine = connect_with_retries(retries=5, delay=3)
 if engine is None:
     st.error("❌ Unable to connect to the database. Please try again later.")
     st.stop()
+
+# ... rest of your existing code continues exactly as you have it ...
 
 # =============================
 # SESSION STATE DEFAULTS
