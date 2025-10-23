@@ -12,6 +12,9 @@ import pydeck as pdk
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import time
 import json
+import folium
+from streamlit_folium import folium_static
+import math
 
 # =============================
 # RENDER DEPLOYMENT FIX
@@ -63,7 +66,18 @@ for key, default in {
     "gps_altitude": None,
     "address_components": {},
     "map_counter": 0,
-    "last_location_check": 0
+    "last_location_check": 0,
+    "formatted_cell": "",
+    "formatted_tel": "",
+    "high_accuracy_lat": None,
+    "high_accuracy_lon": None,
+    "location_source": None,
+    "address_source": None,
+    "show_map_first": False,
+    "gps_heading": None,
+    "gps_speed": None,
+    "gps_timestamp": None,
+    "current_island": None
 }.items():
     st.session_state.setdefault(key, default)
 
@@ -71,6 +85,148 @@ for key, default in {
 # ADMIN CREDENTIALS
 # =============================
 ADMIN_USERS = {"admin": "admin123"}
+
+# =============================
+# ISLAND-SETTLEMENT DATABASE
+# =============================
+ISLAND_SETTLEMENTS = {
+    "New Providence": [
+        "Nassau", "Cable Beach", "Paradise Island", "South Beach", "Lyford Cay",
+        "Old Fort Bay", "Love Beach", "Western Esplanade", "Gambier", "Adelaide"
+    ],
+    "Grand Bahama": [
+        "Freeport", "Lucaya", "West End", "Eight Mile Rock", "Hunter's",
+        "Pinder's Point", "McLean's Town", "Sweetings Cay", "High Rock"
+    ],
+    "Abaco": [
+        "Marsh Harbour", "Treasure Cay", "Hope Town", "Man-O-War Cay", "Great Guana Cay",
+        "Cherokee Sound", "Sandy Point", "Crossing Rocks", "Green Turtle Cay", "Coopers Town"
+    ],
+    "Eleuthera": [
+        "Governor's Harbour", "Rock Sound", "Tarpum Bay", "Palmetto Point", "Hatchet Bay",
+        "Gregory Town", "James Cistern", "Current", "Wemyss Bight", "Green Castle"
+    ],
+    "Exuma": [
+        "George Town", "Rolleville", "Mount Thompson", "Barraterre", "Black Point",
+        "Staniel Cay", "Farmer's Hill", "Steventon", "Moss Town", "Williams Town"
+    ],
+    "Andros": [
+        "Fresh Creek", "Nicholl's Town", "Staniard Creek", "Congo Town", "Mastic Point",
+        "San Andros", "The Bluff", "Little Harbour", "Red Bays", "Behring Point"
+    ],
+    "Long Island": [
+        "Clarence Town", "Deadman's Cay", "Salt Pond", "Stella Maris", "Simms",
+        "Burnt Ground", "Graves", "Petty's", "Scrub Hill", "McKann's"
+    ],
+    "Cat Island": [
+        "Arthur's Town", "The Bight", "Orange Creek", "Port Howe", "Old Bight",
+        "Smith's Bay", "Knowles", "Bennet's Harbour", "McQueen's"
+    ],
+    "Acklins": [
+        "Spring Point", "Snug Corner", "Lovely Bay", "Mason's Bay", "Salina Point",
+        "Delectable Bay", "Binnacle Hill", "Crooked Settlement"
+    ],
+    "Crooked Island": [
+        "Colonel Hill", "Landrail Point", "Cabbage Hill", "French Wells", "Bird Rock",
+        "Albert Town", "Marls", "Duncan Town"
+    ],
+    "Bimini": [
+        "Alice Town", "Bailey Town", "Porgy Bay", "North Bimini", "South Bimini"
+    ],
+    "Berry Islands": [
+        "Great Harbour Cay", "Chub Cay", "Bullocks Harbour", "Sugar Beach", "Little Whale Cay"
+    ],
+    "Inagua": [
+        "Matthew Town", "Main Town", "The Salt Pond", "Northeast Point"
+    ],
+    "Mayaguana": [
+        "Abraham's Bay", "Pirate's Well", "Betsy Bay", "Upper Bay"
+    ],
+    "Ragged Island": [
+        "Duncan Town", "Ragged Island Settlement"
+    ],
+    "San Salvador": [
+        "Cockburn Town", "United Estates", "Sugar Loaf", "Pigeon Creek", "Bonefish Bay"
+    ],
+    "Rum Cay": [
+        "Port Nelson", "Black Rock", "The Harbor", "Conch Shell Bay"
+    ]
+}
+
+# Island center coordinates for map focusing
+ISLAND_CENTERS = {
+    "New Providence": (25.0343, -77.3963),
+    "Grand Bahama": (26.6594, -78.5207),
+    "Abaco": (26.4670, -77.0833),
+    "Eleuthera": (25.1106, -76.1480),
+    "Exuma": (23.6193, -75.9696),
+    "Andros": (24.2886, -77.6850),
+    "Long Island": (23.1765, -75.0962),
+    "Cat Island": (24.4033, -75.5250),
+    "Acklins": (22.3650, -74.0100),
+    "Crooked Island": (22.6392, -74.1536),
+    "Bimini": (25.7000, -79.2833),
+    "Berry Islands": (25.6250, -77.7500),
+    "Inagua": (20.9500, -73.6667),
+    "Mayaguana": (22.3833, -73.0000),
+    "Ragged Island": (22.2167, -75.7333),
+    "San Salvador": (24.0583, -74.5333),
+    "Rum Cay": (23.6853, -74.8419)
+}
+
+# Extended settlement database with approximate coordinates
+SETTLEMENT_COORDINATES = {
+    # New Providence
+    "Nassau": (25.0582, -77.3450),
+    "Cable Beach": (25.0794, -77.3886),
+    "Paradise Island": (25.0850, -77.3200),
+    "Lyford Cay": (25.0333, -77.5333),
+    "Gambier": (25.0000, -77.4667),
+    "Adelaide": (25.0000, -77.4833),
+
+    # Abaco
+    "Marsh Harbour": (26.5412, -77.0636),
+    "Hope Town": (26.5000, -76.9833),
+    "Treasure Cay": (26.6667, -77.2833),
+    "Great Guana Cay": (26.6833, -77.1333),
+    "Man-O-War Cay": (26.6000, -77.0167),
+    "Sandy Point": (26.0167, -77.4000),
+    "Coopers Town": (26.8667, -77.5167),
+    "Cherokee Sound": (26.3333, -77.0333),
+    "Green Turtle Cay": (26.7667, -77.3333),
+
+    # Eleuthera
+    "Governor's Harbour": (25.2000, -76.2333),
+    "Rock Sound": (24.9000, -76.1667),
+    "Gregory Town": (25.2167, -76.2333),
+    "Tarpum Bay": (24.9833, -76.1667),
+    "Hatchet Bay": (25.3500, -76.5167),
+    "Current": (25.4167, -76.7833),
+
+    # Grand Bahama
+    "Freeport": (26.5333, -78.7000),
+    "Lucaya": (26.5167, -78.6333),
+    "West End": (26.6833, -78.9833),
+    "Eight Mile Rock": (26.5500, -78.8000),
+
+    # Exuma
+    "George Town": (23.5167, -75.7833),
+    "Rolleville": (23.6667, -75.9333),
+    "Black Point": (24.0833, -76.4000),
+    "Staniel Cay": (24.1667, -76.4333),
+
+    # Andros
+    "Fresh Creek": (24.7000, -77.8333),
+    "Nicholl's Town": (25.1500, -78.0000),
+    "Congo Town": (24.1667, -77.5833),
+
+    # Long Island
+    "Clarence Town": (23.1000, -74.9833),
+    "Deadman's Cay": (23.1667, -75.1000),
+    "Salt Pond": (23.2500, -75.1333),
+
+    # Add more settlements as needed...
+}
 
 
 # =============================
@@ -110,26 +266,128 @@ def format_array_for_display(data):
     return "None"
 
 
+def format_phone_number(phone_str):
+    """Format phone number as (242) XXX-XXXX"""
+    if not phone_str:
+        return ""
+
+    # Remove all non-digit characters
+    digits = re.sub(r'\D', '', phone_str)
+
+    # Format based on length
+    if len(digits) == 7:
+        return f"(242) {digits[:3]}-{digits[3:]}"
+    elif len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    elif len(digits) == 11 and digits[0] == '1':
+        return f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+    else:
+        return digits  # Return raw digits if format doesn't match
+
+
+def validate_phone_number(phone_str):
+    """Validate Bahamian phone number format"""
+    if not phone_str:
+        return False
+
+    digits = re.sub(r'\D', '', phone_str)
+
+    # Bahamian numbers: 242 area code + 7 digits, or 7 digits assuming 242
+    if len(digits) == 7:  # Local format without area code
+        return True
+    elif len(digits) == 10 and digits[:3] == '242':  # Full format with area code
+        return True
+    elif len(digits) == 11 and digits[0] == '1' and digits[1:4] == '242':  # International format
+        return True
+
+    return False
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two coordinates in kilometers"""
+    R = 6371  # Earth radius in km
+
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    return R * c
+
+
+def get_island_from_settlement(settlement):
+    """Map settlement to island"""
+    for island, settlements in ISLAND_SETTLEMENTS.items():
+        if settlement in settlements:
+            return island
+    return "Unknown Island"
+
+
+def is_location_in_bahamas(lat, lon):
+    """Validate if coordinates are within Bahamas boundaries"""
+    # Bahamas approximate bounds with some buffer
+    bahamas_bounds = {
+        'min_lat': 20.0, 'max_lat': 27.8,
+        'min_lon': -81.0, 'max_lon': -72.0
+    }
+
+    return (bahamas_bounds['min_lat'] <= lat <= bahamas_bounds['max_lat'] and
+            bahamas_bounds['min_lon'] <= lon <= bahamas_bounds['max_lon'])
+
+
+def get_island_zoom_level(island):
+    """Get appropriate zoom level for each island"""
+    zoom_levels = {
+        "New Providence": 12,
+        "Grand Bahama": 11,
+        "Abaco": 10,
+        "Eleuthera": 10,
+        "Exuma": 10,
+        "Andros": 9,
+        "Long Island": 10,
+        "Cat Island": 10,
+        "Acklins": 11,
+        "Crooked Island": 11,
+        "Bimini": 12,
+        "Berry Islands": 11,
+        "Inagua": 10,
+        "Mayaguana": 11,
+        "Ragged Island": 12,
+        "San Salvador": 11,
+        "Rum Cay": 12
+    }
+    return zoom_levels.get(island, 10)
+
+
 # =============================
 # ENHANCED GPS & LOCATION FUNCTIONS
 # =============================
 
-def get_browser_location():
-    """Get high-accuracy GPS location from browser using HTML5 Geolocation API"""
+def get_high_accuracy_gps_location():
+    """Get precise GPS location using browser's high-accuracy geolocation"""
     if not STREAMLIT_JS_AVAILABLE:
-        st.warning("🚫 High-accuracy GPS not available in this environment. Using IP-based location.")
-        return get_enhanced_ip_location()
+        st.error("🚫 GPS not available in this environment. Please use a modern browser with location services enabled.")
+        return False
 
     try:
-        st.info("📍 Requesting GPS access from your browser...")
+        with st.spinner("🛰️ Accessing your device's GPS for precise location..."):
+            # Use high-accuracy GPS with longer timeout
+            loc_data = streamlit_js_eval(
+                js_expressions="""
+                new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) {
+                        reject(new Error('Geolocation not supported'));
+                        return;
+                    }
 
-        # Use streamlit_js_eval for better geolocation
-        loc_data = streamlit_js_eval(
-            js_expressions="""
-            new Promise((resolve) => {
-                if (!navigator.geolocation) {
-                    resolve(null);
-                } else {
+                    const options = {
+                        enableHighAccuracy: true,  // Force GPS accuracy
+                        timeout: 30000,           // 30 second timeout
+                        maximumAge: 0             // No cache, fresh data
+                    };
+
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             resolve({
@@ -137,189 +395,281 @@ def get_browser_location():
                                     latitude: position.coords.latitude,
                                     longitude: position.coords.longitude,
                                     accuracy: position.coords.accuracy,
-                                    altitude: position.coords.altitude
-                                }
+                                    altitude: position.coords.altitude,
+                                    altitudeAccuracy: position.coords.altitudeAccuracy,
+                                    heading: position.coords.heading,
+                                    speed: position.coords.speed
+                                },
+                                timestamp: position.timestamp
                             });
                         },
                         (error) => {
-                            resolve(null);
+                            let errorMsg = '';
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMsg = 'Location access denied. Please allow location permissions.';
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMsg = 'Location information unavailable.';
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMsg = 'Location request timed out.';
+                                    break;
+                                default:
+                                    errorMsg = 'Unknown location error.';
+                                    break;
+                            }
+                            reject(new Error(errorMsg));
                         },
-                        {
-                            enableHighAccuracy: true,
-                            timeout: 15000,
-                            maximumAge: 0
-                        }
+                        options
                     );
-                }
-            })
-            """,
-            want_output=True
-        )
+                })
+                """,
+                want_output=True,
+                key=f"gps_request_{time.time()}"  # Unique key for each request
+            )
 
         if loc_data and "coords" in loc_data:
             lat = loc_data["coords"]["latitude"]
             lon = loc_data["coords"]["longitude"]
-            accuracy = loc_data["coords"].get("accuracy", "Unknown")
-            altitude = loc_data["coords"].get("altitude", "N/A")
+            accuracy = loc_data["coords"].get("accuracy", 0)
 
-            # Store in session state
-            st.session_state["auto_lat"] = lat
-            st.session_state["auto_lon"] = lon
-            st.session_state["latitude"] = lat
-            st.session_state["longitude"] = lon
-            st.session_state["gps_accuracy"] = accuracy
-            st.session_state["gps_altitude"] = altitude
-            st.session_state["last_location_check"] = time.time()
+            # Validate this is actually in Bahamas
+            if not is_location_in_bahamas(lat, lon):
+                st.warning(
+                    "📍 Location appears outside The Bahamas. Please ensure you're in The Bahamas or manually adjust your location.")
+                # Still use it but warn user
 
-            # Get detailed street address from coordinates
-            get_detailed_address_from_coords(lat, lon)
+            # Store high-precision data
+            st.session_state.update({
+                "high_accuracy_lat": lat,
+                "high_accuracy_lon": lon,
+                "latitude": lat,
+                "longitude": lon,
+                "gps_accuracy": accuracy,
+                "gps_altitude": loc_data["coords"].get("altitude"),
+                "gps_heading": loc_data["coords"].get("heading"),
+                "gps_speed": loc_data["coords"].get("speed"),
+                "gps_timestamp": loc_data.get("timestamp"),
+                "location_source": "gps"
+            })
 
-            st.success(f"✅ **GPS Location Acquired!**")
-            st.info(f"📍 Coordinates: `{lat:.6f}, {lon:.6f}`\n"
-                    f"🎯 Accuracy: ±{accuracy:.0f}m\n"
-                    f"⛰️ Altitude: {altitude}m")
-            return True
+            # Get precise address using multiple services
+            success = get_precise_address_from_coords(lat, lon)
+
+            if success:
+                st.success(f"🎯 **Precise GPS Location Acquired!** (Accuracy: ±{accuracy:.0f}m)")
+                return True
+            else:
+                st.warning(
+                    "📍 GPS coordinates acquired but address lookup failed. You can proceed with manual address entry.")
+                return True
+
         else:
-            st.warning("⚠️ Could not access GPS. Falling back to IP-based location...")
-            return get_enhanced_ip_location()
+            st.error("❌ Could not access GPS coordinates. Please ensure location services are enabled.")
+            return False
 
     except Exception as e:
-        st.error(f"❌ Browser GPS Error: {e}")
+        st.error(f"❌ GPS Error: {str(e)}")
+        # Fallback to IP-based location
         return get_enhanced_ip_location()
 
 
-# ... rest of your existing code remains exactly the same ...
+def get_precise_address_from_coords(lat, lon):
+    """Get precise address using multiple geocoding services with Bahamas focus"""
+    try:
+        with st.spinner("🗺️ Getting precise address details..."):
+            # Try multiple services in sequence
+            services = [
+                ("OpenStreetMap (Nominatim)", get_osm_address),
+            ]
+
+            for service_name, service_func in services:
+                try:
+                    st.info(f"Trying {service_name}...")
+                    success = service_func(lat, lon)
+                    if success:
+                        return True
+                except Exception as e:
+                    continue
+
+            # If all services fail, create intelligent fallback
+            return create_intelligent_fallback_address(lat, lon)
+
+    except Exception as e:
+        st.warning(f"Address service temporarily unavailable: {e}")
+        return create_intelligent_fallback_address(lat, lon)
+
+
+def get_osm_address(lat, lon):
+    """Get address from OpenStreetMap Nominatim"""
+    geolocator = Nominatim(
+        user_agent="nacp_bahamas_gov_v2.0",
+        timeout=15
+    )
+
+    location = geolocator.reverse((lat, lon), language='en', exactly_one=True)
+
+    if location and location.raw:
+        address_data = location.raw.get('address', {})
+
+        # Build comprehensive Bahamian address
+        address_parts = []
+
+        # Road-level details
+        if address_data.get('road'):
+            if address_data.get('house_number'):
+                address_parts.append(f"{address_data['house_number']} {address_data['road']}")
+            else:
+                address_parts.append(address_data['road'])
+
+        # Settlement level
+        settlement = (address_data.get('village') or
+                      address_data.get('town') or
+                      address_data.get('city') or
+                      address_data.get('suburb'))
+        if settlement:
+            address_parts.append(settlement)
+
+        # Island level
+        island = address_data.get('island') or address_data.get('state')
+        if island:
+            address_parts.append(island)
+            st.session_state.current_island = island
+
+        # Country
+        if address_data.get('country'):
+            address_parts.append(address_data['country'])
+
+        full_address = ", ".join(address_parts)
+
+        # Store for auto-fill
+        st.session_state.update({
+            "auto_full_address": full_address,
+            "address_components": {
+                "house_number": address_data.get('house_number', ''),
+                "road": address_data.get('road', ''),
+                "settlement": settlement,
+                "island": island,
+                "postcode": address_data.get('postcode', ''),
+                "country": address_data.get('country', ''),
+                "raw_address": address_data
+            },
+            "address_source": "osm"
+        })
+
+        return True
+
+    return False
+
+
+def create_intelligent_fallback_address(lat, lon):
+    """Create intelligent address fallback using coordinate analysis"""
+    # Determine closest island and settlement
+    island_info = find_closest_island_settlement(lat, lon)
+
+    if island_info:
+        island, settlement, distance_km = island_info
+        address = f"Near {settlement}, {island}, The Bahamas"
+
+        st.session_state.update({
+            "auto_full_address": address,
+            "address_components": {
+                "settlement": settlement,
+                "island": island,
+                "approximate_distance_km": distance_km,
+                "coordinates": f"{lat:.6f}, {lon:.6f}",
+                "country": "The Bahamas"
+            },
+            "address_source": "coordinate_analysis",
+            "current_island": island
+        })
+
+        st.info(f"📍 Approximate location: {address} (within ~{distance_km:.1f}km)")
+        return True
+
+    return False
+
+
+def find_closest_island_settlement(lat, lon):
+    """Find the closest known settlement using comprehensive Bahamian data"""
+    closest_settlement = None
+    min_distance = float('inf')
+
+    for settlement, (settle_lat, settle_lon) in SETTLEMENT_COORDINATES.items():
+        distance = haversine_distance(lat, lon, settle_lat, settle_lon)
+        if distance < min_distance:
+            min_distance = distance
+            closest_settlement = settlement
+
+    # Determine island from settlement
+    island = get_island_from_settlement(closest_settlement)
+
+    return (island, closest_settlement, min_distance) if closest_settlement else None
 
 
 def get_enhanced_ip_location():
     """Enhanced fallback method using multiple IP geolocation services"""
     services = [
-        "https://ipinfo.io/json",
         "https://ipapi.co/json/",
+        "https://ipinfo.io/json",
         "http://ip-api.com/json/"
     ]
-
-    lat, lon, city, region, country = None, None, "", "", ""
 
     for service in services:
         try:
             st.info(f"🔍 Trying location service: {service.split('//')[1].split('/')[0]}")
-            resp = requests.get(service, timeout=5)
+            resp = requests.get(service, timeout=10)
             data = resp.json()
 
-            if "ipinfo.io" in service:
-                loc = data.get("loc")
-                if loc:
-                    lat, lon = map(float, loc.split(","))
-                    city = data.get("city", "")
-                    region = data.get("region", "")
-                    country = data.get("country", "")
-                    break
-            elif "ipapi.co" in service:
+            lat, lon, city, region, country = None, None, "", "", ""
+
+            if "ipapi.co" in service:
                 lat = data.get("latitude")
                 lon = data.get("longitude")
                 city = data.get("city", "")
                 region = data.get("region", "")
                 country = data.get("country_name", "")
-                if lat and lon:
-                    break
-            elif "ip-api.com" in service:
-                lat = data.get("lat")
-                lon = data.get("lon")
+
+            elif "ipinfo.io" in service:
+                loc = data.get("loc")
+                if loc and "," in loc:
+                    lat, lon = map(float, loc.split(","))
                 city = data.get("city", "")
                 region = data.get("region", "")
                 country = data.get("country", "")
-                if lat and lon:
-                    break
-        except:
-            continue
 
-    if lat and lon:
-        st.session_state["auto_lat"] = lat
-        st.session_state["auto_lon"] = lon
-        st.session_state["latitude"] = lat
-        st.session_state["longitude"] = lon
-        st.session_state["last_location_check"] = time.time()
+            elif "ip-api.com" in service:
+                if data.get("status") == "success":
+                    lat = data.get("lat")
+                    lon = data.get("lon")
+                    city = data.get("city", "")
+                    region = data.get("regionName", "")
+                    country = data.get("country", "")
 
-        # Get detailed address
-        get_detailed_address_from_coords(lat, lon)
+            # Validate coordinates (rough Bahamas bounds)
+            if lat and lon:
+                st.session_state.update({
+                    "auto_lat": lat,
+                    "auto_lon": lon,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "last_location_check": time.time(),
+                    "location_source": "ip"
+                })
 
-        st.success(f"📍 IP Location detected: {lat:.6f}, {lon:.6f}")
-        if city:
-            st.info(f"🌍 Approximate Area: {city}, {region}, {country}")
-        st.warning("💡 For better accuracy, allow GPS access when prompted.")
-        return True
+                # Get detailed address
+                get_precise_address_from_coords(lat, lon)
 
-    st.warning("⚠️ Unable to auto-detect location. Please enter manually.")
-    return False
-
-
-def get_detailed_address_from_coords(lat, lon):
-    """Get comprehensive address information using multiple geocoding services"""
-    try:
-        # Show loading state
-        with st.spinner("🔄 Getting address details..."):
-            # Try Nominatim first (OpenStreetMap)
-            geolocator = Nominatim(user_agent="nacp_bahamas_app_v1.0")
-            location = geolocator.reverse((lat, lon), language='en', exactly_one=True, timeout=10)
-
-            if location and location.raw:
-                address_data = location.raw.get('address', {})
-
-                # Build comprehensive address
-                address_parts = []
-
-                # House number and street
-                if address_data.get('house_number') and address_data.get('road'):
-                    address_parts.append(f"{address_data['house_number']} {address_data['road']}")
-                elif address_data.get('road'):
-                    address_parts.append(address_data['road'])
-
-                # Neighborhood
-                if address_data.get('suburb'):
-                    address_parts.append(address_data['suburb'])
-
-                # City/town/village
-                city = address_data.get('city') or address_data.get('town') or address_data.get('village')
+                st.success(f"📍 IP Location detected: {lat:.6f}, {lon:.6f}")
                 if city:
-                    address_parts.append(city)
-
-                # State and postcode
-                if address_data.get('state'):
-                    address_parts.append(address_data['state'])
-                if address_data.get('postcode'):
-                    address_parts.append(address_data['postcode'])
-
-                # Country
-                if address_data.get('country'):
-                    address_parts.append(address_data['country'])
-
-                full_address = ", ".join(address_parts)
-
-                # Store detailed address components
-                st.session_state["auto_full_address"] = full_address
-                st.session_state["address_components"] = {
-                    "house_number": address_data.get('house_number', ''),
-                    "road": address_data.get('road', ''),
-                    "neighborhood": address_data.get('suburb', ''),
-                    "city": city,
-                    "state": address_data.get('state', ''),
-                    "postcode": address_data.get('postcode', ''),
-                    "country": address_data.get('country', ''),
-                    "country_code": address_data.get('country_code', '')
-                }
+                    st.info(f"🌍 Approximate Area: {city}, {region}, {country}")
                 return True
 
-    except (GeocoderTimedOut, GeocoderServiceError) as e:
-        st.warning(f"⚠️ Geocoding service slow, using fallback: {e}")
-    except Exception as e:
-        st.warning(f"⚠️ Address lookup failed: {e}")
+        except Exception as e:
+            continue
 
-    # Fallback: Simple coordinates-based address
-    st.session_state["auto_full_address"] = f"Near {lat:.6f}, {lon:.6f}"
-    st.session_state["address_components"] = {
-        "coordinates": f"{lat:.6f}, {lon:.6f}"
-    }
+    st.warning("⚠️ Unable to auto-detect location within Bahamas. Please enter manually.")
     return False
 
 
@@ -341,11 +691,13 @@ def get_safe_coordinates():
     default_lat = 25.0343
     default_lon = -77.3963
 
-    lat = (st.session_state.get("auto_lat") or
+    lat = (st.session_state.get("high_accuracy_lat") or
+           st.session_state.get("auto_lat") or
            st.session_state.get("latitude") or
            default_lat)
 
-    lon = (st.session_state.get("auto_lon") or
+    lon = (st.session_state.get("high_accuracy_lon") or
+           st.session_state.get("auto_lon") or
            st.session_state.get("longitude") or
            default_lon)
 
@@ -369,142 +721,86 @@ def auto_refresh_location():
     current_time = time.time()
 
     if current_time - last_check > 30:  # Refresh every 30 seconds
-        if st.session_state.get("auto_lat") and st.session_state.get("auto_lon"):
+        if st.session_state.get("auto_lat"):
             st.info("🔄 Refreshing location data...")
-            get_detailed_address_from_coords(
+            get_precise_address_from_coords(
                 st.session_state["auto_lat"],
                 st.session_state["auto_lon"]
             )
             st.session_state["last_location_check"] = current_time
 
 
-def show_enhanced_readable_map():
-    """Display enhanced, readable interactive map with auto-updating address"""
+def show_island_focused_map():
+    """Display a map focused on the specific island with user's location"""
 
-    # Get safe coordinates with proper fallbacks
     lat, lon = get_safe_coordinates()
 
-    # Auto-refresh location data
-    auto_refresh_location()
+    # Determine which island to focus on
+    current_island = st.session_state.get("current_island")
+    if current_island and current_island in ISLAND_CENTERS:
+        # Use island-specific center and zoom
+        center_lat, center_lon = ISLAND_CENTERS[current_island]
+        zoom_level = get_island_zoom_level(current_island)
+        map_title = f"🗺️ Map of {current_island}"
+    else:
+        # Fallback to user's coordinates
+        center_lat, center_lon = lat, lon
+        zoom_level = 15
+        map_title = "🗺️ Your Location"
 
-    st.markdown("### 🗺️ Interactive Location Map")
+    st.markdown(f"### {map_title}")
 
-    # Map controls in a compact layout
-    col_controls1, col_controls2, col_controls3 = st.columns([2, 1, 1])
+    # Map controls
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        if st.button("🎯 Get GPS Location", use_container_width=True):
+            get_high_accuracy_gps_location()
+            st.rerun()
 
-    with col_controls1:
-        # Quick location actions
-        sub_col1, sub_col2, sub_col3 = st.columns(3)
-        with sub_col1:
-            if st.button("🎯 Get GPS", key="quick_gps", use_container_width=True):
-                get_browser_location()
-                st.rerun()
-        with sub_col2:
-            if st.button("🌐 IP Location", key="quick_ip", use_container_width=True):
-                get_enhanced_ip_location()
-                st.rerun()
-        with sub_col3:
-            if st.button("🔄 Refresh", key="quick_refresh", use_container_width=True):
-                if st.session_state.get("auto_lat"):
-                    get_detailed_address_from_coords(
-                        st.session_state["auto_lat"],
-                        st.session_state["auto_lon"]
-                    )
-                st.rerun()
-
-    with col_controls2:
+    with col2:
         map_style = st.selectbox(
-            "Style",
-            ["satellite-streets", "light", "dark", "streets", "outdoors"],
-            index=0,
-            key="enhanced_map_style"
+            "Map Style",
+            ["satellite", "streets", "light", "dark", "outdoors"],
+            key="island_map_style"
         )
 
-    with col_controls3:
-        map_zoom = st.slider("Zoom", 10, 20, 16, key="enhanced_map_zoom")
-
-    # Create a more readable map with better visualization
-    view_state = pdk.ViewState(
-        latitude=lat,
-        longitude=lon,
-        zoom=map_zoom,
-        pitch=50,  # Slight tilt for better readability
-        bearing=0
+    # Create Folium map focused on the island
+    m = folium.Map(
+        location=[center_lat, center_lon],
+        zoom_start=zoom_level,
+        tiles='OpenStreetMap'
     )
 
-    # Enhanced marker layer with better visibility
-    marker_layer = pdk.Layer(
-        "ScatterplotLayer",
-        data=pd.DataFrame([{
-            "lat": lat,
-            "lon": lon,
-            "radius": 80,
-            "color": [255, 0, 0, 200]
-        }]),
-        get_position=["lon", "lat"],
-        get_color="color",
-        get_radius="radius",
-        pickable=True,
-        stroked=True,
-        filled=True,
-        line_width_min_pixels=3,
-        line_color=[255, 255, 255]
-    )
+    # Add marker for user's location
+    folium.Marker(
+        [lat, lon],
+        popup="Your Location",
+        tooltip="Click for details",
+        icon=folium.Icon(color='red', icon='info-sign')
+    ).add_to(m)
 
-    # Add accuracy circle if GPS data available
-    layers = [marker_layer]
+    # Add circle for accuracy if available
     if st.session_state.get("gps_accuracy"):
         accuracy = st.session_state.gps_accuracy
-        if isinstance(accuracy, (int, float)) and accuracy > 0:
-            circle_layer = pdk.Layer(
-                "ScatterplotLayer",
-                data=pd.DataFrame([{
-                    "lat": lat,
-                    "lon": lon,
-                    "radius": max(accuracy, 20)  # Minimum 20m radius for visibility
-                }]),
-                get_position=["lon", "lat"],
-                get_color=[0, 100, 255, 20],
-                get_radius="radius",
-                pickable=False
-            )
-            layers = [circle_layer, marker_layer]
-
-    # Create the deck with better tooltips
-    deck = pdk.Deck(
-        map_style=f"mapbox://styles/mapbox/{map_style}-v11",
-        initial_view_state=view_state,
-        layers=layers,
-        tooltip={
-            "html": """
-                <b>📍 Your Location</b><br/>
-                Lat: {lat:.6f}<br/>
-                Lon: {lon:.6f}
-            """,
-            "style": {
-                "backgroundColor": "#1f77b4",
-                "color": "white",
-                "fontSize": "14px",
-                "padding": "10px",
-                "borderRadius": "5px"
-            }
-        }
-    )
+        folium.Circle(
+            location=[lat, lon],
+            radius=accuracy,
+            color='blue',
+            fill=True,
+            fillOpacity=0.2,
+            popup=f"GPS Accuracy: ±{accuracy:.0f}m"
+        ).add_to(m)
 
     # Display the map
-    st.pydeck_chart(deck)
+    folium_static(m, width=700, height=500)
 
-    # Real-time address display with auto-update
+    # Show location details below the map
     display_current_address(lat, lon)
-
-    # Manual coordinate adjustment (only in registration form)
-    if st.session_state.get("page") == "registration":
-        display_coordinate_adjustment(lat, lon)
 
 
 def display_current_address(lat, lon):
     """Display and auto-update the current address information"""
-    st.markdown("#### 📍 Current Location Details")
+    st.markdown("#### 📍 Location Details")
 
     # Create a nice info box for coordinates
     col_coord1, col_coord2, col_accuracy = st.columns([1, 1, 1])
@@ -530,57 +826,48 @@ def display_current_address(lat, lon):
         st.markdown("**📬 Detected Address:**")
         st.info(f"**{address}**")
 
-        # Show address components if available for form auto-fill
-        if "address_components" in st.session_state:
-            components = st.session_state["address_components"]
-            if components.get("road") or components.get("city"):
-                st.caption("💡 This address will auto-fill the form below")
-
     else:
         st.warning("📍 No address detected. Use GPS or enter manually below.")
 
-    # Last update time
-    last_check = st.session_state.get("last_location_check")
-    if last_check:
-        last_update = time.strftime('%H:%M:%S', time.localtime(last_check))
-        st.caption(f"🕒 Last updated: {last_update}")
+        # Quick manual address entry
+        with st.expander("🔧 Enter Address Manually", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                manual_road = st.text_input("Street/Road Name", key="manual_road")
+                manual_settlement = st.text_input("Settlement/Area", key="manual_settlement")
+            with col2:
+                manual_island = st.selectbox("Island", list(ISLAND_SETTLEMENTS.keys()), key="manual_island")
 
+            if st.button("✅ Use This Address", key="use_manual_address"):
+                if manual_road and manual_settlement:
+                    manual_address = f"{manual_road}, {manual_settlement}, {manual_island}, The Bahamas"
+                    st.session_state["auto_full_address"] = manual_address
+                    st.session_state["address_components"] = {
+                        "road": manual_road,
+                        "city": manual_settlement,
+                        "island": manual_island,
+                        "country": "The Bahamas"
+                    }
+                    st.session_state.current_island = manual_island
+                    st.success("✅ Manual address saved!")
+                    st.rerun()
+                else:
+                    st.error("Please enter at least street and settlement information.")
 
-def display_coordinate_adjustment(lat, lon):
-    """Display manual coordinate adjustment controls"""
-    st.markdown("#### 🎯 Fine-tune Location")
-
-    with st.expander("Adjust Coordinates Manually", expanded=False):
+    # Manual coordinate adjustment
+    with st.expander("🎯 Adjust Coordinates Manually", expanded=False):
         col_lat, col_lon, col_btn = st.columns([2, 2, 1])
-
         with col_lat:
-            new_lat = st.number_input(
-                "Latitude",
-                value=float(lat),
-                format="%.6f",
-                step=0.0001,
-                key="manual_latitude",
-                help="Adjust latitude coordinate"
-            )
-
+            new_lat = st.number_input("Latitude", value=float(lat), format="%.6f", step=0.0001, key="manual_lat")
         with col_lon:
-            new_lon = st.number_input(
-                "Longitude",
-                value=float(lon),
-                format="%.6f",
-                step=0.0001,
-                key="manual_longitude",
-                help="Adjust longitude coordinate"
-            )
-
+            new_lon = st.number_input("Longitude", value=float(lon), format="%.6f", step=0.0001, key="manual_lon")
         with col_btn:
             st.write("")
             st.write("")
-            if st.button("🔄 Update", key="update_manual_coords", use_container_width=True):
+            if st.button("🔄 Update", key="update_coords", use_container_width=True):
                 st.session_state.latitude = new_lat
                 st.session_state.longitude = new_lon
-                with st.spinner("Updating address..."):
-                    get_detailed_address_from_coords(new_lat, new_lon)
+                get_precise_address_from_coords(new_lat, new_lon)
                 st.success("📍 Location updated!")
                 st.rerun()
 
@@ -598,7 +885,10 @@ def reset_session():
         "selected_methods", "island_selected", "settlement_selected",
         "street_address", "selected_days", "selected_times",
         "consent_bool", "gps_accuracy", "gps_altitude",
-        "last_location_check"
+        "last_location_check", "formatted_cell", "formatted_tel",
+        "high_accuracy_lat", "high_accuracy_lon", "location_source",
+        "address_source", "show_map_first", "gps_heading",
+        "gps_speed", "gps_timestamp", "current_island"
     ]
     for key in keys_to_reset:
         st.session_state.pop(key, None)
@@ -607,47 +897,74 @@ def reset_session():
 
 
 # =============================
-# LANDING PAGE
+# LANDING PAGE (NO MAP)
 # =============================
 def landing_page():
     st.title("🌾 NACP - National Agricultural Census Pilot Project")
     st.markdown(
         "Welcome to the **National Agricultural Census Pilot Project (NACP)** for The Bahamas.\n\n"
-        "Please provide your location information to begin registration or access the admin portal."
+        "This initiative aims to collect accurate agricultural data to better serve our farming communities. "
+        "Your participation helps shape the future of agriculture in The Bahamas."
     )
 
     st.divider()
 
-    # Enhanced location detection with better layout
-    st.markdown("### 📍 Get Your Location")
-    col1, col2, col3 = st.columns(3)
+    # Quick location preview (no map)
+    st.markdown("### 📍 Quick Location Setup")
+
+    col1, col2 = st.columns(2)
     with col1:
-        if st.button("🎯 **Use GPS** (Most Accurate)", use_container_width=True, type="primary"):
-            get_browser_location()
+        if st.button("🎯 **Enable Location Services**", use_container_width=True, type="primary"):
+            with st.spinner("Checking location services..."):
+                if get_high_accuracy_gps_location():
+                    st.success("Location services ready!")
+                else:
+                    st.info("Location will be collected in the final step")
             st.rerun()
+
     with col2:
-        if st.button("🌐 **Use IP Location** (Fallback)", use_container_width=True):
-            get_enhanced_ip_location()
+        if st.button("🌐 **Use IP Location**", use_container_width=True):
+            with st.spinner("Detecting approximate location..."):
+                get_enhanced_ip_location()
             st.rerun()
-    with col3:
-        if st.button("🔄 **Clear Location**", use_container_width=True):
-            for key in ["auto_lat", "auto_lon", "latitude", "longitude", "auto_full_address"]:
-                st.session_state.pop(key, None)
-            st.success("Location cleared!")
-            st.rerun()
+
+    # Show current location status if available
+    if st.session_state.get("auto_full_address"):
+        st.info(f"📍 **Current Location:** {st.session_state['auto_full_address']}")
+    else:
+        st.info("📍 **Location services** will be used in the final step to verify your exact location.")
 
     st.divider()
 
-    # Show enhanced readable map
-    show_enhanced_readable_map()
+    # Benefits section
+    st.markdown("### 🌟 Why Participate?")
+    col1, col2, col3 = st.columns(3)
 
-    st.markdown("---")
+    with col1:
+        st.markdown("""
+        **📊 Accurate Data**  
+        Help collect precise agricultural information for better planning and resource allocation.
+        """)
+
+    with col2:
+        st.markdown("""
+        **🏝️ Island-Specific**  
+        Location-based data collection ensures resources reach the right communities.
+        """)
+
+    with col3:
+        st.markdown("""
+        **🤝 Community Impact**  
+        Your input directly influences agricultural policies and support programs.
+        """)
+
+    st.divider()
 
     # Navigation buttons
-    st.markdown("### 🚀 Next Steps")
+    st.markdown("### 🚀 Get Started")
     col_a, col_b, col_c = st.columns(3)
     with col_a:
-        if st.button("➡️ **Start Registration**", use_container_width=True, type="primary"):
+        if st.button("📝 **Start Registration**", use_container_width=True, type="primary"):
             st.session_state.page = "registration"
             st.rerun()
     with col_b:
@@ -655,7 +972,7 @@ def landing_page():
             st.session_state.page = "admin_login"
             st.rerun()
     with col_c:
-        if st.button("♻️ **Reset Session**", use_container_width=True):
+        if st.button("🔄 **Reset Session**", use_container_width=True):
             reset_session()
 
 
@@ -700,9 +1017,6 @@ As a producer or holder in The Bahamas, your participation ensures that data col
             st.rerun()
         return
 
-    # Show enhanced map in registration form
-    show_enhanced_readable_map()
-
     # Personal Information
     st.markdown("### 👤 Personal Information")
     col1, col2 = st.columns(2)
@@ -713,29 +1027,34 @@ As a producer or holder in The Bahamas, your participation ensures that data col
         email = st.text_input("Email *", key="reg_email")
 
     with col2:
-        telephone = st.text_input("Telephone Number * (format: (242) 456-4567)", key="reg_tel")
-        cell = st.text_input("Cell Number (optional)", key="reg_cell")
+        # Primary contact - Cell Number
+        cell_raw = st.text_input("Cell Number (Primary Contact) *",
+                                 key="reg_cell",
+                                 placeholder="e.g., 2424567890 or 4567890",
+                                 help="Enter 7 digits for local number or include area code")
 
-    # Validation
-    email_valid = True
-    phone_valid = True
+        # Format the cell number in real-time
+        if cell_raw:
+            formatted_cell = format_phone_number(cell_raw)
+            if formatted_cell != cell_raw:
+                st.session_state.formatted_cell = formatted_cell
+                st.info(f"Formatted: {formatted_cell}")
 
-    if email and not re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,4}$", email):
-        st.warning("⚠️ Invalid email format.")
-        email_valid = False
+        # Alternate contact - Telephone (optional)
+        telephone_raw = st.text_input("Alternate Number (Optional)",
+                                      key="reg_tel",
+                                      placeholder="e.g., 2424567890",
+                                      help="Optional landline or alternate number")
 
-    if telephone and not re.match(r"^\(\d{3}\) \d{3}-\d{4}$", telephone):
-        st.warning("⚠️ Phone number must be in format (242) 456-4567")
-        phone_valid = False
+        # Format telephone in real-time
+        if telephone_raw:
+            formatted_tel = format_phone_number(telephone_raw)
+            if formatted_tel != telephone_raw:
+                st.session_state.formatted_tel = formatted_tel
+                st.info(f"Formatted: {formatted_tel}")
 
-    # Address Information - Auto-populated from GPS
+    # Address Information
     st.markdown("### 📍 Address Information")
-    ISLANDS = [
-        "New Providence", "Grand Bahama", "Abaco", "Acklins", "Andros",
-        "Berry Islands", "Bimini", "Cat Island", "Crooked Island",
-        "Eleuthera", "Exuma", "Inagua", "Long Island", "Mayaguana",
-        "Ragged Island", "Rum Cay", "San Salvador"
-    ]
 
     # Auto-populate from GPS if available
     island_default = ""
@@ -746,24 +1065,82 @@ As a producer or holder in The Bahamas, your participation ensures that data col
         components = st.session_state["address_components"]
         if components.get("city"):
             settlement_default = components["city"]
+        elif components.get("island"):
+            settlement_default = components["island"]
         if components.get("road"):
             street_default = components["road"]
 
     col1, col2 = st.columns(2)
     with col1:
-        island_selected = st.selectbox(
-            "Island *",
-            ISLANDS,
-            key="reg_island"
-        )
-        settlement_selected = st.text_input("Settlement/District *", value=settlement_default, key="reg_settlement")
+        # Island selection with GPS hint
+        if "address_components" in st.session_state and st.session_state["address_components"].get("island"):
+            gps_island = st.session_state["address_components"]["island"]
+            island_selected = st.selectbox(
+                "Island *",
+                list(ISLAND_SETTLEMENTS.keys()),
+                index=list(ISLAND_SETTLEMENTS.keys()).index(gps_island) if gps_island in ISLAND_SETTLEMENTS else 0,
+                key="reg_island",
+                help=f"GPS detected: {gps_island}"
+            )
+        else:
+            island_selected = st.selectbox(
+                "Island *",
+                list(ISLAND_SETTLEMENTS.keys()),
+                key="reg_island",
+                help="Select your island"
+            )
+
+        # Dynamic settlement dropdown based on island selection
+        settlements = ISLAND_SETTLEMENTS.get(island_selected, [])
+
+        if settlements:
+            # Try to pre-select based on GPS data
+            default_index = 0
+            if settlement_default:
+                for i, settlement in enumerate(settlements):
+                    if settlement_default.lower() in settlement.lower() or settlement.lower() in settlement_default.lower():
+                        default_index = i
+                        break
+
+            settlement_selected = st.selectbox(
+                "Settlement/District *",
+                settlements,
+                index=default_index,
+                key="reg_settlement",
+                help="Select from predefined settlements for your island"
+            )
+        else:
+            settlement_selected = st.text_input(
+                "Settlement/District *",
+                value=settlement_default,
+                key="reg_settlement",
+                help="Enter your settlement name"
+            )
 
     with col2:
-        street_address = st.text_input("Street Address *", value=street_default, key="reg_street")
+        street_address = st.text_input(
+            "Street Address *",
+            value=street_default,
+            key="reg_street",
+            placeholder="e.g., 123 Main Street, Coral Harbour, Near the school",
+            help="Full street address, road name, or area description"
+        )
 
         # Quick address helper
         if st.session_state.get("auto_full_address"):
             st.caption(f"💡 GPS detected: {st.session_state['auto_full_address']}")
+
+        # "Other" settlement option
+        if settlements and st.checkbox("My settlement is not in the list", key="other_settlement"):
+            settlement_selected = st.text_input(
+                "Enter Settlement Name *",
+                value=settlement_default,
+                key="custom_settlement",
+                help="Please provide the correct name of your settlement"
+            )
+
+        # Location notice
+        st.info("📍 **Precise location** will be verified in the final step using GPS.")
 
     # Communication Preferences
     st.markdown("### 💬 Preferred Communication Methods")
@@ -787,6 +1164,28 @@ As a producer or holder in The Bahamas, your participation ensures that data col
 
     st.divider()
 
+    # Validation
+    email_valid = True
+    cell_valid = True
+    telephone_valid = True
+
+    if email and not re.match(r"^[\w\.-]+@[\w\.-]+\.\w{2,4}$", email):
+        st.warning("⚠️ Invalid email format.")
+        email_valid = False
+
+    # Validate cell number (required)
+    if not cell_raw:
+        st.warning("⚠️ Cell number is required as primary contact.")
+        cell_valid = False
+    elif not validate_phone_number(cell_raw):
+        st.warning("⚠️ Please enter a valid Bahamian cell number (7 or 10 digits).")
+        cell_valid = False
+
+    # Validate telephone (optional but must be valid if provided)
+    if telephone_raw and not validate_phone_number(telephone_raw):
+        st.warning("⚠️ Please enter a valid telephone number (7 or 10 digits).")
+        telephone_valid = False
+
     # Save button
     col_back, col_save = st.columns([1, 2])
     with col_back:
@@ -795,13 +1194,13 @@ As a producer or holder in The Bahamas, your participation ensures that data col
             st.rerun()
 
     with col_save:
-        if st.button("💾 Save & Continue", type="primary", use_container_width=True):
+        if st.button("💾 Save & Continue to Availability", type="primary", use_container_width=True):
             # Validation
-            if not all([first_name, last_name, telephone, email, island_selected, settlement_selected, street_address]):
+            if not all([first_name, last_name, cell_raw, email, island_selected, settlement_selected, street_address]):
                 st.error("⚠️ Please complete all required fields marked with *")
                 return
 
-            if not email_valid or not phone_valid:
+            if not email_valid or not cell_valid or not telephone_valid:
                 st.error("⚠️ Please fix validation errors above.")
                 return
 
@@ -812,6 +1211,10 @@ As a producer or holder in The Bahamas, your participation ensures that data col
             if not interview_selected:
                 st.error("⚠️ Please select at least one interview method.")
                 return
+
+            # Format phone numbers before saving
+            formatted_cell = format_phone_number(cell_raw)
+            formatted_telephone = format_phone_number(telephone_raw) if telephone_raw else None
 
             # Convert lists to PostgreSQL array literals
             communication_methods = "{" + ",".join(selected_methods) + "}"
@@ -824,26 +1227,24 @@ As a producer or holder in The Bahamas, your participation ensures that data col
                         INSERT INTO registration_form (
                             consent, first_name, last_name, email, telephone, cell,
                             communication_methods, island, settlement, street_address,
-                            interview_methods, latitude, longitude
+                            interview_methods
                         ) VALUES (
                             :consent, :first_name, :last_name, :email, :telephone, :cell,
                             :communication_methods, :island, :settlement, :street_address,
-                            :interview_methods, :latitude, :longitude
+                            :interview_methods
                         )
                     """), {
                         "consent": st.session_state["consent_bool"],
                         "first_name": first_name,
                         "last_name": last_name,
                         "email": email,
-                        "telephone": telephone,
-                        "cell": cell,
+                        "telephone": formatted_telephone,
+                        "cell": formatted_cell,
                         "communication_methods": communication_methods,
                         "island": island_selected,
                         "settlement": settlement_selected,
                         "street_address": street_address,
-                        "interview_methods": interview_methods,
-                        "latitude": st.session_state.get("latitude"),
-                        "longitude": st.session_state.get("longitude")
+                        "interview_methods": interview_methods
                     })
                 st.success("✅ Registration saved successfully!")
                 st.session_state.page = "availability"
@@ -883,12 +1284,12 @@ def availability_form():
     col_back, col_save = st.columns([1, 2])
 
     with col_back:
-        if st.button("← Back"):
+        if st.button("← Back to Registration"):
             st.session_state.page = "registration"
             st.rerun()
 
     with col_save:
-        if st.button("💾 Save Availability", type="primary"):
+        if st.button("💾 Save Availability & Continue to Location", type="primary"):
             if not selected_days or not selected_times:
                 st.error("⚠️ Please select at least one day and one time slot.")
                 return
@@ -901,18 +1302,101 @@ def availability_form():
                         WHERE id=(SELECT max(id) FROM registration_form)
                     """), {"days": selected_days, "times": selected_times})
 
-                st.success("✅ Availability saved successfully!")
-                st.session_state.page = "confirmation"
+                st.success("✅ Availability saved! Now let's get your precise location.")
+                st.session_state.page = "location_confirmation"
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Database error: {e}")
 
 
 # =============================
-# FIXED CONFIRMATION PAGE
+# LOCATION CONFIRMATION PAGE (WITH MAP)
 # =============================
-def confirmation_page():
-    st.title("🎉 Thank You for Registering!")
+def location_confirmation_page():
+    st.title("📍 Confirm Your Location")
+
+    st.markdown("""
+    ### 🎯 Final Step: Verify Your Exact Location
+
+    **Why precise location matters:**
+    - 🎯 **Accurate agricultural data collection**
+    - 📍 **Proper resource allocation to your area**
+    - 🗺️ **Island-specific mapping and planning**
+    - 🌾 **Localized agricultural support**
+
+    **For best results:**
+    - 📱 Use a **smartphone** with GPS capability
+    - 📍 **Allow location access** when browser prompts
+    - 🌤️ Be **outdoors** or near windows for better GPS signal
+    - 🔄 Wait for GPS to achieve **high accuracy** (±10-20m)
+    """)
+
+    # High-accuracy GPS button
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        if st.button("🎯 **GET PRECISE GPS LOCATION**",
+                     type="primary",
+                     use_container_width=True,
+                     help="Uses your device's actual GPS hardware for pinpoint accuracy"):
+            with st.spinner("🛰️ Accessing GPS satellite data..."):
+                if get_high_accuracy_gps_location():
+                    st.success("✅ Precise GPS location acquired!")
+                    st.balloons()
+                    # Auto-proceed to confirmation after short delay
+                    time.sleep(2)
+                    st.session_state.page = "final_confirmation"
+                    st.rerun()
+
+    with col2:
+        if st.button("🌐 Use IP Location", use_container_width=True):
+            with st.spinner("Getting approximate location..."):
+                get_enhanced_ip_location()
+            st.rerun()
+
+    st.divider()
+
+    # SHOW THE MAP - Only appears in this final step
+    show_island_focused_map()
+
+    st.divider()
+
+    # Navigation
+    col_back, col_skip = st.columns(2)
+    with col_back:
+        if st.button("← Back to Availability"):
+            st.session_state.page = "availability"
+            st.rerun()
+    with col_skip:
+        if st.button("⏭️ Skip Location (Not Recommended)", use_container_width=True):
+            st.warning("""
+            ⚠️ **Agricultural data accuracy may be affected**
+
+            Precise location is crucial for:
+            - Proper resource allocation
+            - Accurate agricultural planning  
+            - Island-specific support programs
+            """)
+            if st.checkbox("I understand the implications"):
+                st.session_state.page = "final_confirmation"
+                st.rerun()
+
+
+# =============================
+# FINAL CONFIRMATION PAGE
+# =============================
+def final_confirmation_page():
+    st.title("🎉 Registration Complete!")
+
+    # Show location status prominently
+    if st.session_state.get("location_source") == "gps":
+        st.success("✅ **Precise GPS Location Recorded**")
+        if st.session_state.get("gps_accuracy"):
+            st.info(f"📍 **GPS Accuracy:** ±{st.session_state['gps_accuracy']:.0f}m")
+    elif st.session_state.get("auto_full_address"):
+        st.info("📍 **Approximate Location Recorded**")
+    else:
+        st.warning("⚠️ **No Location Recorded** - Agricultural data may be less accurate")
+
     st.markdown(
         "Your registration for the **National Agricultural Census Pilot Project (NACP)** "
         "has been successfully submitted.\n\n"
@@ -921,9 +1405,20 @@ def confirmation_page():
 
     st.divider()
 
-    # Display registration details
+    # Enhanced registration details with location info
     try:
         with engine.begin() as conn:
+            # First update the record with location data if available
+            if st.session_state.get("latitude") and st.session_state.get("longitude"):
+                conn.execute(text("""
+                    UPDATE registration_form 
+                    SET latitude=:lat, longitude=:lon 
+                    WHERE id=(SELECT max(id) FROM registration_form)
+                """), {
+                    "lat": st.session_state.get("latitude"),
+                    "lon": st.session_state.get("longitude")
+                })
+
             reg = conn.execute(
                 text("SELECT * FROM registration_form ORDER BY id DESC LIMIT 1")
             ).mappings().fetchone()
@@ -935,25 +1430,33 @@ def confirmation_page():
                 with col1:
                     st.markdown(f"**Name:** {reg['first_name']} {reg['last_name']}")
                     st.markdown(f"**Email:** {reg['email']}")
-                    st.markdown(f"**Phone:** {reg['telephone']}")
+                    st.markdown(f"**Cell:** {reg['cell']}")
+                    if reg['telephone']:
+                        st.markdown(f"**Alternate:** {reg['telephone']}")
                     st.markdown(f"**Island:** {reg['island']}")
 
                 with col2:
                     st.markdown(f"**Settlement:** {reg['settlement']}")
                     st.markdown(f"**Street:** {reg['street_address']}")
+
+                    # Location accuracy info
+                    if reg.get('latitude') and reg.get('longitude'):
+                        accuracy_info = ""
+                        if st.session_state.get("gps_accuracy"):
+                            accuracy_info = f" (Accuracy: ±{st.session_state['gps_accuracy']:.0f}m)"
+                        st.markdown(
+                            f"**Location Coordinates:** {reg['latitude']:.6f}, {reg['longitude']:.6f}{accuracy_info}")
+
                     st.markdown(f"**Communication:** {format_array_for_display(reg.get('communication_methods'))}")
                     st.markdown(f"**Interview Method:** {format_array_for_display(reg.get('interview_methods'))}")
 
-                # Safely display availability data
+                # Availability
                 available_days = format_array_for_display(reg.get('available_days'))
                 available_times = format_array_for_display(reg.get('available_times'))
 
                 st.markdown(f"**Available Days:** {available_days}")
                 st.markdown(f"**Available Times:** {available_times}")
 
-                # Display coordinates if available
-                if reg.get('latitude') and reg.get('longitude'):
-                    st.markdown(f"**Location Coordinates:** {reg['latitude']:.6f}, {reg['longitude']:.6f}")
             else:
                 st.warning("No registration found.")
 
@@ -1096,7 +1599,8 @@ page_map = {
     "landing": landing_page,
     "registration": registration_form,
     "availability": availability_form,
-    "confirmation": confirmation_page,
+    "location_confirmation": location_confirmation_page,
+    "final_confirmation": final_confirmation_page,
     "admin_login": admin_login,
     "admin_dashboard": admin_dashboard
 }
