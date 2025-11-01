@@ -1,9 +1,9 @@
 # main_app.py - NACP Bahamas Complete Application
-<<<<<<< HEAD
+
 # Complete self-contained version with all features
-=======
+
 # Fully Updated Version with All Enhancements
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 
 import os
 import streamlit as st
@@ -20,10 +20,9 @@ import math
 from datetime import datetime, timedelta
 import io
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
 # =============================
 # DATABASE CONNECTION WITH RENDER POSTGRESQL
 # =============================
@@ -35,17 +34,17 @@ def get_database_connection():
         "postgresql://postgres:postgres@localhost:5432/nacp_bahamas",
         "sqlite:///nacp_bahamas.db"
     ]
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     for connection_string in connection_strings:
         if connection_string:
             try:
                 if connection_string.startswith('postgres://'):
                     connection_string = connection_string.replace('postgres://', 'postgresql://', 1)
-<<<<<<< HEAD
+
                 
                 engine = create_engine(connection_string, pool_pre_ping=True, connect_args={
                     'connect_timeout': 10,
@@ -60,7 +59,7 @@ def get_database_connection():
                 
                 db_type = "PostgreSQL" if "postgresql" in connection_string else "SQLite"
                 
-=======
+
 
                 engine = create_engine(connection_string, pool_pre_ping=True)
 
@@ -76,7 +75,7 @@ def get_database_connection():
                     st.success("✅ Connected to Local PostgreSQL Database")
                 else:
                     st.success("✅ Connected to SQLite Database")
-<<<<<<< HEAD
+
                     
                 return engine, db_type
             except Exception as e:
@@ -85,7 +84,7 @@ def get_database_connection():
     st.error("❌ All database connection attempts failed. Using in-memory storage.")
     return None, "memory"
 
-=======
+
 
                 return engine, db_type
             except Exception as e:
@@ -95,7 +94,7 @@ def get_database_connection():
     return None, "memory"
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 # Initialize database connection
 engine, db_type = get_database_connection()
 
@@ -103,7 +102,7 @@ engine, db_type = get_database_connection()
 # STREAMLIT PAGE CONFIG
 # =============================
 st.set_page_config(
-<<<<<<< HEAD
+
     page_title="NACP Bahamas", 
 =======
     page_title="NACP Bahamas",
@@ -194,10 +193,10 @@ ISLAND_CENTERS = {
     "Rum Cay": (23.6853, -74.8419)
 }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 # =============================
 # UTILITY FUNCTIONS
 # =============================
@@ -217,10 +216,10 @@ def safe_convert_array_data(data):
             pass
     return [data] if data else []
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def format_array_for_display(data):
     """Format array data for display in the UI"""
     if not data:
@@ -230,10 +229,10 @@ def format_array_for_display(data):
         return ", ".join(str(item) for item in array_data)
     return "None"
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def format_phone_number(phone_str):
     """Format phone number as (242) XXX-XXXX"""
     if not phone_str:
@@ -248,10 +247,10 @@ def format_phone_number(phone_str):
     else:
         return digits
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def validate_phone_number(phone_str):
     """Validate Bahamian phone number format"""
     if not phone_str:
@@ -265,13 +264,13 @@ def validate_phone_number(phone_str):
         return True
     return False
 
-<<<<<<< HEAD
+
 def validate_email(email):
     """Validate email format"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
-=======
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
 
 def get_island_zoom_level(island):
     """Get appropriate zoom level for each island"""
@@ -284,8 +283,7 @@ def get_island_zoom_level(island):
     }
     return zoom_levels.get(island, 10)
 
-<<<<<<< HEAD
-=======
+
 
 def validate_email(email):
     """Validate email format"""
@@ -293,7 +291,7 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 # =============================
 # REVERSE GEOCODING FUNCTIONS
 # =============================
@@ -301,7 +299,7 @@ def get_address_from_coordinates(lat, lon):
     """Get street address from coordinates using OpenStreetMap Nominatim"""
     try:
         url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
-<<<<<<< HEAD
+
         
         headers = {
             'User-Agent': 'NACP Bahamas Agricultural Census/1.0'
@@ -314,7 +312,7 @@ def get_address_from_coordinates(lat, lon):
             address = data.get('display_name', '')
             address_components = data.get('address', {})
             
-=======
+
 
         headers = {
             'User-Agent': 'NACP Bahamas Agricultural Census/1.0'
@@ -327,26 +325,26 @@ def get_address_from_coordinates(lat, lon):
             address = data.get('display_name', '')
             address_components = data.get('address', {})
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             # Build a formatted address for The Bahamas
             road = address_components.get('road', '')
             house_number = address_components.get('house_number', '')
             suburb = address_components.get('suburb', '')
             neighbourhood = address_components.get('neighbourhood', '')
-<<<<<<< HEAD
+
             city = address_components.get('city', '') or address_components.get('town', '') or address_components.get('village', '')
             
             # Create formatted address
             formatted_parts = []
             
-=======
+
             city = address_components.get('city', '') or address_components.get('town', '') or address_components.get(
                 'village', '')
 
             # Create formatted address
             formatted_parts = []
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if house_number:
                 formatted_parts.append(house_number)
             if road:
@@ -357,24 +355,24 @@ def get_address_from_coordinates(lat, lon):
                 formatted_parts.append(neighbourhood)
             if city:
                 formatted_parts.append(city)
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if formatted_parts:
                 formatted_address = ", ".join(formatted_parts)
                 return formatted_address
             else:
                 return address
-<<<<<<< HEAD
+
             
         return f"Near {lat:.6f}, {lon:.6f}"
         
     except Exception as e:
         return f"Near {lat:.6f}, {lon:.6f}"
 
-=======
+
 
         return f"Near {lat:.6f}, {lon:.6f}"
 
@@ -382,12 +380,12 @@ def get_address_from_coordinates(lat, lon):
         return f"Near {lat:.6f}, {lon:.6f}"
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 def auto_detect_and_fill_address():
     """Automatically detect and fill address when coordinates are set"""
     lat = st.session_state.get("latitude")
     lon = st.session_state.get("longitude")
-<<<<<<< HEAD
+
     
     if not lat or not lon:
         return False
@@ -395,7 +393,7 @@ def auto_detect_and_fill_address():
     try:
         address = get_address_from_coordinates(lat, lon)
         
-=======
+
 
     if not lat or not lon:
         return False
@@ -403,30 +401,30 @@ def auto_detect_and_fill_address():
     try:
         address = get_address_from_coordinates(lat, lon)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         if address and address != f"Near {lat:.6f}, {lon:.6f}":
             # Update the street address field in session state
             st.session_state.reg_street = address
             return True
         else:
             return False
-<<<<<<< HEAD
+
             
     except Exception as e:
         return False
 
-=======
+
 
     except Exception as e:
         return False
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 def auto_fill_address_from_coordinates():
     """Automatically fill address fields based on current coordinates"""
     lat = st.session_state.get("latitude")
     lon = st.session_state.get("longitude")
-<<<<<<< HEAD
+
     
     if not lat or not lon:
         st.warning("⚠️ No coordinates available. Please set your location first.")
@@ -440,7 +438,7 @@ def auto_fill_address_from_coordinates():
                 # Update the street address field in session state
                 st.session_state.reg_street = address
                 
-=======
+
 
     if not lat or not lon:
         st.warning("⚠️ No coordinates available. Please set your location first.")
@@ -454,25 +452,24 @@ def auto_fill_address_from_coordinates():
                 # Update the street address field in session state
                 st.session_state.reg_street = address
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 st.success(f"📍 **Address detected:** {address}")
                 return True
             else:
                 st.warning("⚠️ Could not detect specific address. Please enter manually.")
                 return False
-<<<<<<< HEAD
                 
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
     except Exception as e:
         st.error("❌ Failed to detect address. Please enter manually.")
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 # =============================
 # DATABASE INITIALIZATION
 # =============================
@@ -480,7 +477,7 @@ def initialize_database():
     """Initialize database tables if they don't exist"""
     if engine is None:
         return False
-<<<<<<< HEAD
+
         
     if st.session_state.get("database_initialized"):
         return True
@@ -504,7 +501,7 @@ def initialize_database():
                 """))
                 table_exists = result.fetchone() is not None
             
-=======
+
 
     if st.session_state.get("database_initialized"):
         return True
@@ -520,7 +517,7 @@ def initialize_database():
             """))
             table_exists = result.scalar()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if table_exists:
                 # Table exists, check if confirmed column exists
                 try:
@@ -531,7 +528,7 @@ def initialize_database():
                     st.info("✅ Added 'confirmed' column to existing table")
             else:
                 # Create new table with confirmed column
-<<<<<<< HEAD
+
                 if db_type == "PostgreSQL":
                     conn.execute(text("""
                         CREATE TABLE registration_form (
@@ -588,7 +585,7 @@ def initialize_database():
         st.success("✅ Database initialized successfully")
         return True
         
-=======
+
                 conn.execute(text("""
                     CREATE TABLE registration_form (
                         id SERIAL PRIMARY KEY,
@@ -618,21 +615,21 @@ def initialize_database():
         st.success("✅ Database initialized successfully")
         return True
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     except Exception as e:
         st.error(f"❌ Database initialization error: {e}")
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def restore_tables():
     """Restore database tables (recreate if missing)"""
     if engine is None:
         st.error("❌ No database connection available")
         return False
-<<<<<<< HEAD
+
         
     try:
         with engine.begin() as conn:
@@ -652,7 +649,7 @@ def restore_tables():
                 """))
                 table_exists = result.fetchone() is not None
             
-=======
+
 
     try:
         with engine.begin() as conn:
@@ -665,7 +662,7 @@ def restore_tables():
             """))
             table_exists = result.scalar()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if table_exists:
                 # Table exists, check if confirmed column exists
                 try:
@@ -677,7 +674,7 @@ def restore_tables():
                     st.success("✅ Added 'confirmed' column to existing table")
             else:
                 # Recreate table with confirmed column
-<<<<<<< HEAD
+
                 if db_type == "PostgreSQL":
                     conn.execute(text("""
                         CREATE TABLE registration_form (
@@ -732,8 +729,7 @@ def restore_tables():
             
             st.session_state.database_initialized = True
             return True
-            
-=======
+        
                 conn.execute(text("""
                     CREATE TABLE registration_form (
                         id SERIAL PRIMARY KEY,
@@ -763,24 +759,24 @@ def restore_tables():
             st.session_state.database_initialized = True
             return True
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     except Exception as e:
         st.error(f"❌ Table restoration error: {e}")
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def fix_database_schema():
     """Fix database schema by adding missing columns"""
     if engine is None:
         return False
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
     try:
         with engine.begin() as conn:
             # Check if confirmed column exists
@@ -791,34 +787,34 @@ def fix_database_schema():
                 conn.execute(text("ALTER TABLE registration_form ADD COLUMN confirmed BOOLEAN DEFAULT FALSE"))
                 st.success("✅ Added missing 'confirmed' column to database")
                 return True
-<<<<<<< HEAD
+
             
             st.info("✅ Database schema is up to date")
             return True
             
-=======
+
 
             st.info("✅ Database schema is up to date")
             return True
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     except Exception as e:
         st.error(f"❌ Schema fix error: {e}")
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def check_database_schema():
     """Check and fix database schema on startup"""
     if engine is None:
         return False
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
     try:
         with engine.begin() as conn:
             # Check if confirmed column exists
@@ -828,25 +824,25 @@ def check_database_schema():
         # Column doesn't exist, try to fix it
         return fix_database_schema()
 
-<<<<<<< HEAD
+
 # Initialize database on startup
 if st.session_state.get("page") == "landing" and engine is not None and not st.session_state.get("database_initialized"):
-=======
+
 
 # Initialize database on startup
 if st.session_state.get("page") == "landing" and engine is not None and not st.session_state.get(
         "database_initialized"):
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     initialize_database()
 
 # Add schema check after database initialization
 if engine is not None and st.session_state.get("database_initialized"):
     check_database_schema()
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 # =============================
 # DATA STORAGE FUNCTIONS
 # =============================
@@ -854,7 +850,7 @@ def save_registration_data(data):
     """Save registration data to database or session state as fallback"""
     if engine is not None:
         try:
-<<<<<<< HEAD
+
             # Convert arrays to appropriate format for database
             if db_type == "PostgreSQL":
                 sql = """
@@ -920,7 +916,7 @@ def save_registration_data(data):
                 st.session_state.last_registration_id = registration_id
                 return True
                 
-=======
+
             sql = """
                 INSERT INTO registration_form (
                     consent, first_name, last_name, email, telephone, cell,
@@ -945,7 +941,7 @@ def save_registration_data(data):
                 st.session_state.last_registration_id = registration_id
                 return True
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         except Exception as e:
             st.error(f"❌ Database save error: {e}")
             return False
@@ -953,11 +949,11 @@ def save_registration_data(data):
         registration_id = len(st.session_state.get("registration_data", {})) + 1
         if "registration_data" not in st.session_state:
             st.session_state.registration_data = {}
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         data['id'] = registration_id
         data['confirmed'] = False
         st.session_state.registration_data[registration_id] = data
@@ -966,10 +962,10 @@ def save_registration_data(data):
         st.warning("⚠️ Using temporary storage (database unavailable)")
         return True
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def update_registration_location(registration_id, lat, lon, accuracy=None, source=None):
     """Update location data for a specific registration"""
     if engine is not None:
@@ -979,20 +975,20 @@ def update_registration_location(registration_id, lat, lon, accuracy=None, sourc
                 "lon": lon,
                 "id": registration_id
             }
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if accuracy is not None:
                 update_data["accuracy"] = accuracy
             if source is not None:
                 update_data["source"] = source
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if accuracy is not None and source is not None:
                 sql = """
                     UPDATE registration_form 
@@ -1006,19 +1002,19 @@ def update_registration_location(registration_id, lat, lon, accuracy=None, sourc
                     SET latitude = :lat, longitude = :lon
                     WHERE id = :id
                 """
-<<<<<<< HEAD
+
             
             with engine.begin() as conn:
                 result = conn.execute(text(sql), update_data)
                 return result.rowcount > 0
                 
-=======
+
 
             with engine.begin() as conn:
                 result = conn.execute(text(sql), update_data)
                 return result.rowcount > 0
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         except Exception as e:
             return False
     else:
@@ -1030,18 +1026,18 @@ def update_registration_location(registration_id, lat, lon, accuracy=None, sourc
             return True
         return False
 
-<<<<<<< HEAD
+
 def get_latest_registration():
     """Get the latest registration from database or session state"""
     registration_id = st.session_state.get("current_registration_id")
     
-=======
+
 
 def get_latest_registration():
     """Get the latest registration from database or session state"""
     registration_id = st.session_state.get("current_registration_id")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     if registration_id:
         if engine is not None:
             try:
@@ -1050,7 +1046,7 @@ def get_latest_registration():
                         text("SELECT * FROM registration_form WHERE id = :id"),
                         {"id": registration_id}
                     )
-<<<<<<< HEAD
+
                     row = result.mappings().fetchone()
                     if row and db_type != "PostgreSQL":
                         # Convert JSON strings back to arrays for SQLite
@@ -1062,25 +1058,25 @@ def get_latest_registration():
                                 except:
                                     row[field] = []
                     return row
-=======
+
                     return result.mappings().fetchone()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             except Exception as e:
                 return None
         else:
             return st.session_state.get("registration_data", {}).get(registration_id)
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     if engine is not None:
         try:
             with engine.begin() as conn:
                 result = conn.execute(
                     text("SELECT * FROM registration_form ORDER BY id DESC LIMIT 1")
                 )
-<<<<<<< HEAD
+
                 row = result.mappings().fetchone()
                 if row and db_type != "PostgreSQL":
                     # Convert JSON strings back to arrays for SQLite
@@ -1092,9 +1088,9 @@ def get_latest_registration():
                             except:
                                 row[field] = []
                 return row
-=======
+
                 return result.mappings().fetchone()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         except Exception as e:
             return None
     else:
@@ -1104,10 +1100,10 @@ def get_latest_registration():
             return registration_data[latest_id]
         return None
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def get_all_registrations():
     """Get all registrations for admin selection"""
     if engine is not None:
@@ -1116,7 +1112,7 @@ def get_all_registrations():
                 result = conn.execute(
                     text("SELECT * FROM registration_form ORDER BY id DESC")
                 )
-<<<<<<< HEAD
+
                 rows = result.mappings().fetchall()
                 if db_type != "PostgreSQL":
                     # Convert JSON strings back to arrays for SQLite
@@ -1132,19 +1128,18 @@ def get_all_registrations():
                         processed_rows.append(row_dict)
                     return processed_rows
                 return rows
-=======
                 return result.mappings().fetchall()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         except Exception as e:
             st.error(f"Error loading registrations: {e}")
             return []
     else:
         return list(st.session_state.get("registration_data", {}).values())
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def confirm_registration(registration_id):
     """Mark a registration as confirmed"""
     if engine is not None:
@@ -1164,15 +1159,15 @@ def confirm_registration(registration_id):
             return True
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def update_registration_data(registration_id, data):
     """Update registration data in database"""
     if engine is not None:
         try:
-<<<<<<< HEAD
+
             # Convert arrays to appropriate format
             if db_type == "PostgreSQL":
                 update_data = {
@@ -1207,8 +1202,8 @@ def update_registration_data(registration_id, data):
                     "id": registration_id
                 }
             
-=======
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
             with engine.begin() as conn:
                 result = conn.execute(text("""
                     UPDATE registration_form 
@@ -1218,11 +1213,11 @@ def update_registration_data(registration_id, data):
                         interview_methods = :interview_methods, available_days = :available_days,
                         available_times = :available_times
                     WHERE id = :id
-<<<<<<< HEAD
+
                 """), update_data)
-=======
+
                 """), {**data, "id": registration_id})
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 return result.rowcount > 0
         except Exception as e:
             st.error(f"Update error: {e}")
@@ -1233,10 +1228,9 @@ def update_registration_data(registration_id, data):
             return True
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
 # =============================
 # LOCATION FUNCTIONS
 # =============================
@@ -1276,28 +1270,28 @@ def get_enhanced_ip_location():
         st.warning("⚠️ Unable to auto-detect location. Please use the map or manual entry.")
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def get_safe_coordinates():
     """Get safe coordinate values with fallbacks"""
     default_lat = 25.0343
     default_lon = -77.3963
 
-<<<<<<< HEAD
+
     lat = (st.session_state.get("map_click_lat") or 
            st.session_state.get("latitude") or 
            default_lat)
     lon = (st.session_state.get("map_click_lon") or 
            st.session_state.get("longitude") or 
-=======
+
     lat = (st.session_state.get("map_click_lat") or
            st.session_state.get("latitude") or
            default_lat)
     lon = (st.session_state.get("map_click_lon") or
            st.session_state.get("longitude") or
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
            default_lon)
 
     try:
@@ -1309,10 +1303,10 @@ def get_safe_coordinates():
 
     return lat, lon
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def save_current_location_to_registration():
     """Save current location from session state to the current registration"""
     registration_id = st.session_state.get("current_registration_id")
@@ -1320,19 +1314,19 @@ def save_current_location_to_registration():
     lon = st.session_state.get("longitude")
     accuracy = st.session_state.get("gps_accuracy")
     source = st.session_state.get("location_source")
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     if registration_id and lat and lon:
         return update_registration_location(registration_id, lat, lon, accuracy, source)
     return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def handle_map_click(click_data):
     """Handle map click events to set coordinates"""
     if click_data and 'lat' in click_data and 'lng' in click_data:
@@ -1342,20 +1336,20 @@ def handle_map_click(click_data):
         st.session_state.longitude = click_data['lng']
         st.session_state.location_source = "map_click"
         st.session_state.manual_coordinates = False
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         # AUTO-DETECT ADDRESS WHEN COORDINATES ARE SET
         auto_detect_and_fill_address()
         return True
     return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def show_interactive_map():
     """Display an interactive map for coordinate selection"""
     lat, lon = get_safe_coordinates()
@@ -1400,18 +1394,17 @@ def show_interactive_map():
 
     if map_data and map_data.get("last_clicked"):
         if handle_map_click(map_data["last_clicked"]):
-<<<<<<< HEAD
+
             st.success(f"📍 **Location selected!** Coordinates: {map_data['last_clicked']['lat']:.6f}, {map_data['last_clicked']['lng']:.6f}")
-=======
             st.success(
                 f"📍 **Location selected!** Coordinates: {map_data['last_clicked']['lat']:.6f}, {map_data['last_clicked']['lng']:.6f}")
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             st.session_state.map_counter += 1
             st.rerun()
 
     return map_data
 
-<<<<<<< HEAD
+
 def show_coordinate_controls():
     """Show coordinate display and manual input controls"""
     st.markdown("#### 📍 Coordinate Controls")
@@ -1426,7 +1419,7 @@ def show_coordinate_controls():
     with col2:
         st.metric("Longitude", f"{lon:.6f}")
     
-=======
+
 
 def show_coordinate_controls():
     """Show coordinate display and manual input controls"""
@@ -1442,7 +1435,7 @@ def show_coordinate_controls():
     with col2:
         st.metric("Longitude", f"{lon:.6f}")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     with col3:
         source = st.session_state.get("location_source", "unknown")
         source_display = {
@@ -1456,7 +1449,7 @@ def show_coordinate_controls():
 
     with st.expander("✏️ Enter Coordinates Manually", expanded=False):
         st.markdown("**Enter precise coordinates manually:**")
-<<<<<<< HEAD
+
         
         col_lat, col_lon = st.columns(2)
         with col_lat:
@@ -1464,7 +1457,7 @@ def show_coordinate_controls():
                 "Latitude", 
                 value=float(lat), 
                 format="%.6f", 
-=======
+
 
         col_lat, col_lon = st.columns(2)
         with col_lat:
@@ -1472,13 +1465,13 @@ def show_coordinate_controls():
                 "Latitude",
                 value=float(lat),
                 format="%.6f",
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 step=0.0001,
                 key="manual_lat_input"
             )
         with col_lon:
             manual_lon = st.number_input(
-<<<<<<< HEAD
+
                 "Longitude", 
                 value=float(lon), 
                 format="%.6f", 
@@ -1486,7 +1479,7 @@ def show_coordinate_controls():
                 key="manual_lon_input"
             )
         
-=======
+
                 "Longitude",
                 value=float(lon),
                 format="%.6f",
@@ -1494,7 +1487,7 @@ def show_coordinate_controls():
                 key="manual_lon_input"
             )
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         if st.button("✅ Use Manual Coordinates", key="use_manual_coords"):
             st.session_state.latitude = manual_lat
             st.session_state.longitude = manual_lon
@@ -1502,11 +1495,11 @@ def show_coordinate_controls():
             st.session_state.manual_coordinates = True
             st.session_state.map_click_lat = None
             st.session_state.map_click_lon = None
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             # AUTO-DETECT ADDRESS WHEN MANUAL COORDINATES ARE SET
             auto_detect_and_fill_address()
             st.success("✅ Manual coordinates set!")
@@ -1524,10 +1517,10 @@ def show_coordinate_controls():
             st.success("✅ Coordinates cleared!")
             st.rerun()
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 # =============================
 # RESET SESSION FUNCTION
 # =============================
@@ -1535,7 +1528,7 @@ def reset_session():
     """Clear all session state data"""
     keys_to_keep = ["registration_data", "database_initialized"]
     keys_to_reset = [key for key in st.session_state.keys() if key not in keys_to_keep]
-<<<<<<< HEAD
+
     
     for key in keys_to_reset:
         st.session_state.pop(key, None)
@@ -1556,17 +1549,17 @@ def reset_session():
 
 # =============================
 # PAGE FUNCTIONS
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 # =============================
 def landing_page():
     st.title("🌾 NACP - National Agricultural Census Pilot Project")
     st.markdown("""
     Welcome to the **National Agricultural Census Pilot Project (NACP)** for The Bahamas.
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     This initiative aims to collect accurate agricultural data to better serve our farming communities. 
     Your participation helps shape the future of agriculture in The Bahamas.
     """)
@@ -1607,10 +1600,10 @@ def landing_page():
         if st.button("🔄 **Reset Session**", use_container_width=True):
             reset_session()
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def registration_form():
     st.title("🌱 Registration Form")
 
@@ -1659,27 +1652,26 @@ def registration_form():
     with col1:
         # Store previous island selection to detect changes
         previous_island = st.session_state.get("current_island")
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         island_selected = st.selectbox(
             "Island *",
             list(ISLAND_SETTLEMENTS.keys()),
             key="reg_island"
         )
-<<<<<<< HEAD
+
         
         # Update current island in session state
         st.session_state.current_island = island_selected
         
-=======
 
         # Update current island in session state
         st.session_state.current_island = island_selected
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         # If island changed, update map view for later use
         if previous_island != island_selected:
             st.session_state.map_counter += 1  # Force map refresh for later pages
@@ -1692,21 +1684,21 @@ def registration_form():
         settlements = ISLAND_SETTLEMENTS.get(island_selected, [])
         # Add "Other" option to settlements
         settlement_options = settlements + ["Other"]
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         settlement_selected = st.selectbox(
             "Settlement/District *",
             settlement_options,
             key="reg_settlement"
         )
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         # Show manual input if "Other" is selected
         if settlement_selected == "Other":
             manual_settlement = st.text_input(
@@ -1726,28 +1718,28 @@ def registration_form():
         auto_detected_address = ""
         if st.session_state.get("latitude") and st.session_state.get("longitude"):
             auto_detected_address = get_address_from_coordinates(
-<<<<<<< HEAD
+
                 st.session_state.latitude, 
                 st.session_state.longitude
             )
         
-=======
+
                 st.session_state.latitude,
                 st.session_state.longitude
             )
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         street_address = st.text_input(
             "Street Address *",
             value=st.session_state.get("reg_street", auto_detected_address),
             key="reg_street",
             placeholder="e.g., 123 Main Street, Coral Harbour"
         )
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         # Show auto-detection status
         if st.session_state.get("latitude") and st.session_state.get("longitude"):
             if auto_detected_address and auto_detected_address != f"Near {st.session_state.latitude:.6f}, {st.session_state.longitude:.6f}":
@@ -1854,10 +1846,10 @@ def registration_form():
             else:
                 st.error("❌ Failed to save registration. Please try again.")
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def availability_form():
     # Security check: Prevent access if no current registration
     registration_id = st.session_state.get("current_registration_id")
@@ -1867,11 +1859,11 @@ def availability_form():
             st.session_state.page = "landing"
             st.rerun()
         return
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     # Additional check: If registration is already confirmed, redirect
     reg = get_latest_registration()
     if reg and reg.get('confirmed'):
@@ -1921,7 +1913,7 @@ def availability_form():
                 if engine is not None:
                     try:
                         with engine.begin() as conn:
-<<<<<<< HEAD
+
                             # Update availability data
                             if db_type == "PostgreSQL":
                                 conn.execute(text("""
@@ -1951,7 +1943,7 @@ def availability_form():
                     st.session_state.registration_data[registration_id]['available_days'] = selected_days
                     st.session_state.registration_data[registration_id]['available_times'] = selected_times
                 
-=======
+
                             conn.execute(text("""
                                 UPDATE registration_form 
                                 SET available_days = :days, available_times = :times
@@ -1969,17 +1961,16 @@ def availability_form():
                     st.session_state.registration_data[registration_id]['available_days'] = selected_days
                     st.session_state.registration_data[registration_id]['available_times'] = selected_times
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 st.success("✅ Availability information saved successfully!")
                 st.session_state.page = "location_confirmation"
                 st.rerun()
             else:
                 st.error("❌ No registration found. Please start over.")
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
 def location_confirmation_page():
     # Security check: Prevent access if no current registration
     registration_id = st.session_state.get("current_registration_id")
@@ -1989,11 +1980,11 @@ def location_confirmation_page():
             st.session_state.page = "landing"
             st.rerun()
         return
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     # Additional check: If registration is already confirmed, redirect
     reg = get_latest_registration()
     if reg and reg.get('confirmed'):
@@ -2008,11 +1999,11 @@ def location_confirmation_page():
 
     st.markdown("""
     ### 🎯 Set Your Exact Location
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     **Choose your method:**
     - 🗺️ **Click on the map** below to select your exact location
     - 🌐 **Use IP** for approximate location  
@@ -2050,7 +2041,7 @@ def location_confirmation_page():
     # UPDATED: Auto-address detection section (now shows status instead of requiring button click)
     if st.session_state.get("latitude") and st.session_state.get("longitude"):
         st.markdown("### 🏠 Auto-Detected Address")
-<<<<<<< HEAD
+
         
         # Show current coordinates
         st.info(f"**Current Coordinates:** {st.session_state.latitude:.6f}, {st.session_state.longitude:.6f}")
@@ -2065,7 +2056,7 @@ def location_confirmation_page():
             st.success(f"**✅ Address Auto-Detected:** {detected_address}")
             st.caption("This address has been automatically filled in your registration.")
             
-=======
+
 
         # Show current coordinates
         st.info(f"**Current Coordinates:** {st.session_state.latitude:.6f}, {st.session_state.longitude:.6f}")
@@ -2080,35 +2071,35 @@ def location_confirmation_page():
             st.success(f"**✅ Address Auto-Detected:** {detected_address}")
             st.caption("This address has been automatically filled in your registration.")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             # Show the current value from session state (what will be used in registration)
             if st.session_state.get("reg_street"):
                 st.info(f"**Street Address Field:** {st.session_state.reg_street}")
         else:
-<<<<<<< HEAD
+
             st.warning("⚠️ Could not detect specific address from these coordinates. Please enter manually in the registration form.")
-=======
+
             st.warning(
                 "⚠️ Could not detect specific address from these coordinates. Please enter manually in the registration form.")
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 
     st.divider()
 
     col_back, col_save, col_continue = st.columns([1, 1, 1])
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     with col_back:
         if st.button("← Back"):
             st.session_state.page = "availability" if st.session_state.get("current_registration_id") else "landing"
             st.rerun()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     with col_save:
         if st.session_state.get("latitude") and st.session_state.get("longitude"):
             if st.button("💾 Save Location", type="primary", use_container_width=True):
@@ -2118,11 +2109,11 @@ def location_confirmation_page():
                     st.error("❌ Failed to save location. Please try again.")
         else:
             st.button("💾 Save Location", disabled=True, use_container_width=True)
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     with col_continue:
         if st.button("✅ Continue", type="primary", use_container_width=True):
             if st.session_state.get("latitude") and st.session_state.get("longitude"):
@@ -2132,18 +2123,18 @@ def location_confirmation_page():
             else:
                 st.warning("⚠️ Please set your location first")
 
-<<<<<<< HEAD
+
 def edit_registration_form(reg):
     """Allow candidates to edit their registration before final submission"""
     st.markdown("### ✏️ Edit Your Registration")
     
-=======
+
 
 def edit_registration_form(reg):
     """Allow candidates to edit their registration before final submission"""
     st.markdown("### ✏️ Edit Your Registration")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     with st.form("edit_registration"):
         st.markdown("#### 👤 Personal Information")
         col1, col2 = st.columns(2)
@@ -2160,11 +2151,11 @@ def edit_registration_form(reg):
                                      value=cell_digits,
                                      key="edit_cell",
                                      placeholder="e.g., 2424567890 or 4567890")
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             telephone_digits = re.sub(r'\D', '', reg.get('telephone', '')) if reg.get('telephone') else ""
             telephone_raw = st.text_input("Alternate Number (Optional)",
                                           value=telephone_digits,
@@ -2176,7 +2167,7 @@ def edit_registration_form(reg):
         with col1:
             # Store previous island selection to detect changes
             previous_island = st.session_state.get("current_island")
-<<<<<<< HEAD
+
             
             island_selected = st.selectbox(
                 "Island *",
@@ -2188,7 +2179,7 @@ def edit_registration_form(reg):
             # Update current island in session state
             st.session_state.current_island = island_selected
             
-=======
+
 
             island_selected = st.selectbox(
                 "Island *",
@@ -2201,7 +2192,7 @@ def edit_registration_form(reg):
             # Update current island in session state
             st.session_state.current_island = island_selected
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             # If island changed, update map view
             if previous_island != island_selected:
                 st.session_state.map_counter += 1  # Force map refresh
@@ -2213,29 +2204,29 @@ def edit_registration_form(reg):
 
             settlements = ISLAND_SETTLEMENTS.get(island_selected, [])
             settlement_options = settlements + ["Other"]
-<<<<<<< HEAD
+
             
             current_settlement = reg.get('settlement', '')
             settlement_index = settlement_options.index(current_settlement) if current_settlement in settlement_options else 0
             
-=======
+
 
             current_settlement = reg.get('settlement', '')
             settlement_index = settlement_options.index(
                 current_settlement) if current_settlement in settlement_options else 0
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             settlement_selected = st.selectbox(
                 "Settlement/District *",
                 settlement_options,
                 index=settlement_index,
                 key="edit_settlement"
             )
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if settlement_selected == "Other":
                 manual_settlement = st.text_input(
                     "Enter Settlement Name *",
@@ -2375,41 +2366,41 @@ def edit_registration_form(reg):
             st.session_state.edit_mode = False
             st.rerun()
 
-<<<<<<< HEAD
+
 def final_confirmation_page():
     # Security check: Prevent access if no current registration or already confirmed
     registration_id = st.session_state.get("current_registration_id")
     
-=======
+
 
 def final_confirmation_page():
     # Security check: Prevent access if no current registration or already confirmed
     registration_id = st.session_state.get("current_registration_id")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     # Get the registration data - try multiple ways
     reg = None
     if registration_id:
         reg = get_latest_registration()
-<<<<<<< HEAD
+
     
     # If we don't have reg but registration_confirmed is True, try to get the latest registration
     if not reg and st.session_state.get("registration_confirmed"):
         reg = get_latest_registration()
     
-=======
+
 
     # If we don't have reg but registration_confirmed is True, try to get the latest registration
     if not reg and st.session_state.get("registration_confirmed"):
         reg = get_latest_registration()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     # Additional security: If registration is already confirmed, show thank you message
     if reg and reg.get('confirmed'):
         # SHOW PERSONALIZED THANK YOU MESSAGE FOR ALREADY CONFIRMED REGISTRATIONS
         user_name = f"{reg.get('first_name', '')} {reg.get('last_name', '')}".strip()
         user_island = reg.get('island', 'The Bahamas')
-<<<<<<< HEAD
+
         
         st.balloons()
         st.success("🎉 **Registration Already Confirmed and Submitted!**")
@@ -2451,7 +2442,7 @@ def final_confirmation_page():
 
         With sincere appreciation,
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         **The NACP Team**  
         *Ministry of Agriculture and Marine Resources*  
         *Government of The Bahamas*
@@ -2473,11 +2464,11 @@ def final_confirmation_page():
         return
 
     st.title("🎉 Registration Complete!")
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     if not reg:
         st.error("❌ No registration data found. Please start over.")
         if st.button("🏠 Back to Home"):
@@ -2495,38 +2486,38 @@ def final_confirmation_page():
     if not st.session_state.get("registration_confirmed"):
         # Show registration summary for review BEFORE confirmation
         st.success("✅ **All information saved! Please review your details below.**")
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         if reg.get('latitude') and reg.get('longitude'):
             source = reg.get('location_source', 'manual')
             source_display = {
                 'gps': '🎯 GPS',
-<<<<<<< HEAD
+
                 'ip': '🌐 IP', 
-=======
+
                 'ip': '🌐 IP',
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 'map_click': '🗺️ Map',
                 'manual': '✏️ Manual',
                 'unknown': '❓ Unknown'
             }
             st.success(f"📍 **Location saved via {source_display.get(source, 'manual')}**")
-<<<<<<< HEAD
+
         
         st.markdown("### 📋 Registration Summary")
         
         col1, col2 = st.columns(2)
         
-=======
+
 
         st.markdown("### 📋 Registration Summary")
 
         col1, col2 = st.columns(2)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         with col1:
             st.markdown("#### 👤 Personal Information")
             st.write(f"**Name:** {reg.get('first_name', '')} {reg.get('last_name', '')}")
@@ -2534,49 +2525,49 @@ def final_confirmation_page():
             st.write(f"**Cell:** {reg.get('cell', '')}")
             if reg.get('telephone'):
                 st.write(f"**Alternate:** {reg.get('telephone', '')}")
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             st.markdown("#### 📍 Address")
             st.write(f"**Island:** {reg.get('island', '')}")
             st.write(f"**Settlement:** {reg.get('settlement', '')}")
             st.write(f"**Street:** {reg.get('street_address', '')}")
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         with col2:
             st.markdown("#### 💬 Communication Preferences")
             st.write(f"**Methods:** {format_array_for_display(reg.get('communication_methods'))}")
             st.write(f"**Interview:** {format_array_for_display(reg.get('interview_methods'))}")
-<<<<<<< HEAD
+
             
             st.markdown("#### 🕒 Availability")
             st.write(f"**Days:** {format_array_for_display(reg.get('available_days'))}")
             st.write(f"**Times:** {format_array_for_display(reg.get('available_times'))}")
             
-=======
+
 
             st.markdown("#### 🕒 Availability")
             st.write(f"**Days:** {format_array_for_display(reg.get('available_days'))}")
             st.write(f"**Times:** {format_array_for_display(reg.get('available_times'))}")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if reg.get('latitude') and reg.get('longitude'):
                 st.markdown("#### 📍 Location")
                 st.write(f"**Coordinates:** {reg.get('latitude'):.6f}, {reg.get('longitude'):.6f}")
                 st.write(f"**Source:** {source_display.get(source, 'Unknown')}")
 
         st.divider()
-<<<<<<< HEAD
+
         
         # Edit and Confirm buttons
         col1, col2, col3 = st.columns(3)
         
-=======
+
 
         # Edit and Confirm buttons
         col1, col2, col3 = st.columns(3)
@@ -2586,11 +2577,11 @@ def final_confirmation_page():
             if st.button("✏️ Edit Information", use_container_width=True):
                 st.session_state.edit_mode = True
                 st.rerun()
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         with col2:
             if st.button("✅ Confirm Submission", type="primary", use_container_width=True):
                 if confirm_registration(registration_id):
@@ -2600,25 +2591,25 @@ def final_confirmation_page():
                     st.rerun()
                 else:
                     st.error("❌ Failed to confirm registration. Please try again.")
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         with col3:
             if st.button("🗺️ View Location", use_container_width=True):
                 st.session_state.page = "location_confirmation"
                 st.rerun()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     else:
         # THIS IS WHERE THE PERSONALIZED THANK YOU MESSAGE APPEARS AFTER CONFIRMATION
         user_name = f"{reg.get('first_name', '')} {reg.get('last_name', '')}".strip()
         user_island = reg.get('island', 'The Bahamas')
-<<<<<<< HEAD
+
         
         st.balloons()  # Add celebration effect
         
@@ -2654,12 +2645,12 @@ def final_confirmation_page():
 
         By participating in this important initiative, you are directly helping to:
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         🌱 **Shape agricultural policies** that support farmers across The Bahamas  
         📊 **Provide accurate data** for better resource allocation and planning  
         🏝️ **Strengthen food security** in our island nation  
         🤝 **Build stronger communities** through improved agricultural support
-<<<<<<< HEAD
+
         
         ### What Happens Next?
         
@@ -2674,7 +2665,7 @@ def final_confirmation_page():
         
         With sincere appreciation,
         
-=======
+
 
         ### What Happens Next?
 
@@ -2689,7 +2680,7 @@ def final_confirmation_page():
 
         With sincere appreciation,
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         **The NACP Team**  
         *Ministry of Agriculture and Marine Resources*  
         *Government of The Bahamas*  
@@ -2697,11 +2688,11 @@ def final_confirmation_page():
         """)
 
         st.divider()
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         # Add a nice visual element
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -2710,19 +2701,18 @@ def final_confirmation_page():
             st.metric("Location", f"📍 {user_island}")
         with col3:
             st.metric("Thank You", "🌟 Appreciated")
-<<<<<<< HEAD
+
         
         st.divider()
         
         col1, col2 = st.columns(2)
         
-=======
 
         st.divider()
 
         col1, col2 = st.columns(2)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         with col1:
             if st.button("🏠 Return to Homepage", use_container_width=True, type="primary"):
                 # Now clear the registration data when going back to home
@@ -2731,18 +2721,18 @@ def final_confirmation_page():
                 st.session_state.edit_mode = False
                 st.session_state.current_registration_id = None
                 st.rerun()
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+        
+
+
+
         with col2:
             if st.button("📝 Register Another Person", use_container_width=True):
                 reset_session()
                 st.session_state.page = "registration"
                 st.rerun()
 
-<<<<<<< HEAD
+
 def admin_login():
     st.title("🔐 Admin Portal")
     
@@ -2750,7 +2740,7 @@ def admin_login():
     
     col1, col2 = st.columns(2)
     
-=======
+
 
 def admin_login():
     st.title("🔐 Admin Portal")
@@ -2759,20 +2749,20 @@ def admin_login():
 
     col1, col2 = st.columns(2)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     with col1:
         username = st.text_input("Username", key="admin_user")
     with col2:
         password = st.text_input("Password", type="password", key="admin_pass")
-<<<<<<< HEAD
+
     
     col1, col2, col3 = st.columns([2, 1, 2])
     
-=======
+
 
     col1, col2, col3 = st.columns([2, 1, 2])
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     with col2:
         if st.button("🚪 Login", use_container_width=True, type="primary"):
             if username in ADMIN_USERS and ADMIN_USERS[username] == password:
@@ -2782,30 +2772,30 @@ def admin_login():
                 st.rerun()
             else:
                 st.error("❌ Invalid credentials")
-<<<<<<< HEAD
+
     
     st.divider()
     
-=======
+
 
     st.divider()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     if st.button("← Back to Home"):
         st.session_state.page = "landing"
         st.rerun()
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def admin_dashboard():
     if not st.session_state.get("admin_logged_in"):
         st.error("❌ Access denied. Please log in.")
         st.session_state.page = "admin_login"
         st.rerun()
         return
-<<<<<<< HEAD
+
     
     st.title("📊 Admin Dashboard")
     
@@ -2814,7 +2804,7 @@ def admin_dashboard():
     with tab1:
         st.markdown("### 📋 All Registrations")
         
-=======
+
 
     st.title("📊 Admin Dashboard")
 
@@ -2823,21 +2813,21 @@ def admin_dashboard():
     with tab1:
         st.markdown("### 📋 All Registrations")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         if engine is not None:
             try:
                 with engine.begin() as conn:
                     result = conn.execute(text("SELECT COUNT(*) FROM registration_form"))
                     count = result.scalar()
                     st.metric("Total Registrations", count)
-<<<<<<< HEAD
+
                     
                     result_confirmed = conn.execute(text("SELECT COUNT(*) FROM registration_form WHERE confirmed = TRUE"))
-=======
+
 
                     result_confirmed = conn.execute(
                         text("SELECT COUNT(*) FROM registration_form WHERE confirmed = TRUE"))
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                     confirmed_count = result_confirmed.scalar()
                     st.metric("Confirmed Registrations", confirmed_count)
             except Exception as e:
@@ -2846,7 +2836,7 @@ def admin_dashboard():
                 confirmed_count = 0
         else:
             count = len(st.session_state.get("registration_data", {}))
-<<<<<<< HEAD
+
             confirmed_count = len([r for r in st.session_state.get("registration_data", {}).values() if r.get('confirmed')])
             st.metric("Total Registrations", count)
             st.metric("Confirmed Registrations", confirmed_count)
@@ -2854,7 +2844,7 @@ def admin_dashboard():
         if count > 0:
             registrations = get_all_registrations()
             
-=======
+
             confirmed_count = len(
                 [r for r in st.session_state.get("registration_data", {}).values() if r.get('confirmed')])
             st.metric("Total Registrations", count)
@@ -2879,7 +2869,7 @@ def admin_dashboard():
             else:
                 registrations = list(st.session_state.get("registration_data", {}).values())
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             # Table with delete checkboxes
             if registrations:
                 # Create a DataFrame for selection
@@ -2898,15 +2888,15 @@ def admin_dashboard():
                         "Created": reg.get('created_at', ''),
                         "Source": reg.get('location_source', 'unknown')
                     })
-<<<<<<< HEAD
+
                 
                 df = pd.DataFrame(df_data)
                 
-=======
+
 
                 df = pd.DataFrame(df_data)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 # Display the dataframe with selection
                 edited_df = st.data_editor(
                     df,
@@ -2922,17 +2912,17 @@ def admin_dashboard():
                     hide_index=True,
                     use_container_width=True
                 )
-<<<<<<< HEAD
+
                 
                 # Get selected rows for deletion
                 selected_rows = edited_df[edited_df["Delete"] == True]
                 
-=======
+
 
                 # Get selected rows for deletion
                 selected_rows = edited_df[edited_df["Delete"] == True]
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 if not selected_rows.empty:
                     st.warning(f"⚠️ {len(selected_rows)} registration(s) selected for deletion")
                     if st.button("🗑️ Delete Selected", type="secondary"):
@@ -2940,66 +2930,66 @@ def admin_dashboard():
                         for _, row in selected_rows.iterrows():
                             if delete_registration(row["ID"]):
                                 deleted_count += 1
-<<<<<<< HEAD
-                        
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                        
+
+
+
                         if deleted_count > 0:
                             st.success(f"✅ Successfully deleted {deleted_count} registration(s)")
                             st.rerun()
                         else:
                             st.error("❌ Failed to delete registrations")
-<<<<<<< HEAD
-                
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                
+
+
+
                 # Show detailed view
                 st.markdown("### 👤 Registration Details")
                 selected_id = st.selectbox(
                     "Select registration to view details:",
                     options=[r.get('id') for r in registrations],
-<<<<<<< HEAD
+
                     format_func=lambda x: f"ID {x}: {next((f'{r.get('first_name')} {r.get('last_name')}' for r in registrations if r.get('id') == x), 'Unknown')}"
                 )
                 
-=======
+
                     format_func=lambda
                         x: f"ID {x}: {next((f'{r.get('first_name')} {r.get('last_name')}' for r in registrations if r.get('id') == x), 'Unknown')}"
                 )
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 if selected_id:
                     selected_reg = next((r for r in registrations if r.get('id') == selected_id), None)
                     if selected_reg:
                         col1, col2 = st.columns(2)
-<<<<<<< HEAD
+
                         
                         with col1:
                             st.markdown("#### Personal Information")
                             st.write(f"**Name:** {selected_reg.get('first_name', '')} {selected_reg.get('last_name', '')}")
-=======
+
 
                         with col1:
                             st.markdown("#### Personal Information")
                             st.write(
                                 f"**Name:** {selected_reg.get('first_name', '')} {selected_reg.get('last_name', '')}")
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                             st.write(f"**Email:** {selected_reg.get('email', '')}")
                             st.write(f"**Cell:** {selected_reg.get('cell', '')}")
                             if selected_reg.get('telephone'):
                                 st.write(f"**Telephone:** {selected_reg.get('telephone', '')}")
-<<<<<<< HEAD
-                            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                            
+
+
+
                             st.markdown("#### Address")
                             st.write(f"**Island:** {selected_reg.get('island', '')}")
                             st.write(f"**Settlement:** {selected_reg.get('settlement', '')}")
                             st.write(f"**Street:** {selected_reg.get('street_address', '')}")
-<<<<<<< HEAD
+
                         
                         with col2:
                             st.markdown("#### Preferences")
@@ -3011,7 +3001,6 @@ def admin_dashboard():
                             st.markdown("#### Location Data")
                             if selected_reg.get('latitude') and selected_reg.get('longitude'):
                                 st.write(f"**Coordinates:** {selected_reg.get('latitude'):.6f}, {selected_reg.get('longitude'):.6f}")
-=======
 
                         with col2:
                             st.markdown("#### Preferences")
@@ -3026,39 +3015,39 @@ def admin_dashboard():
                             if selected_reg.get('latitude') and selected_reg.get('longitude'):
                                 st.write(
                                     f"**Coordinates:** {selected_reg.get('latitude'):.6f}, {selected_reg.get('longitude'):.6f}")
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                                 st.write(f"**Source:** {selected_reg.get('location_source', 'unknown')}")
                                 if selected_reg.get('gps_accuracy'):
                                     st.write(f"**Accuracy:** {selected_reg.get('gps_accuracy')}m")
                             else:
                                 st.write("**Coordinates:** Not set")
-<<<<<<< HEAD
+
                             
                             st.write(f"**Created:** {selected_reg.get('created_at', 'Unknown')}")
                             st.write(f"**Confirmed:** {'✅ Yes' if selected_reg.get('confirmed') else '❌ No'}")
             
-=======
+
 
                             st.write(f"**Created:** {selected_reg.get('created_at', 'Unknown')}")
                             st.write(f"**Confirmed:** {'✅ Yes' if selected_reg.get('confirmed') else '❌ No'}")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             else:
                 st.info("📭 No registrations found")
         else:
             st.info("📭 No registrations in the system")
-<<<<<<< HEAD
+
     
     with tab2:
         st.markdown("### 🗺️ Registration Map View")
         
         located_registrations = []
-=======
+
 
     with tab2:
         st.markdown("### 🗺️ Registration Map View")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         if engine is not None:
             try:
                 with engine.begin() as conn:
@@ -3073,7 +3062,7 @@ def admin_dashboard():
                     located_registrations = result.mappings().fetchall()
             except Exception as e:
                 st.error(f"Error loading location data: {e}")
-<<<<<<< HEAD
+
         else:
             located_registrations = [
                 r for r in st.session_state.get("registration_data", {}).values() 
@@ -3083,8 +3072,7 @@ def admin_dashboard():
         if located_registrations:
             # Create map centered on The Bahamas
             m = folium.Map(location=[25.0343, -77.3963], zoom_start=7, tiles='OpenStreetMap')
-            
-=======
+               
                 located_registrations = []
         else:
             located_registrations = [
@@ -3096,43 +3084,43 @@ def admin_dashboard():
             # Create map centered on The Bahamas
             m = folium.Map(location=[25.0343, -77.3963], zoom_start=7, tiles='OpenStreetMap')
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             # Add markers for each registration
             for reg in located_registrations:
                 lat = reg.get('latitude')
                 lon = reg.get('longitude')
-<<<<<<< HEAD
-                
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                
+
+
+
                 if lat and lon:
                     # Different colors for confirmed vs unconfirmed
                     color = 'green' if reg.get('confirmed') else 'blue'
                     icon = 'ok-sign' if reg.get('confirmed') else 'info-sign'
-<<<<<<< HEAD
-                    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                    
+
+
+
                     popup_text = f"""
                     <b>{reg.get('first_name', '')} {reg.get('last_name', '')}</b><br>
                     <i>{reg.get('island', '')}, {reg.get('settlement', '')}</i><br>
                     {reg.get('street_address', '')}<br>
                     Status: {'✅ Confirmed' if reg.get('confirmed') else '❌ Pending'}
                     """
-<<<<<<< HEAD
-                    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                    
+
+
+
                     folium.Marker(
                         [lat, lon],
                         popup=folium.Popup(popup_text, max_width=300),
                         tooltip=f"{reg.get('first_name', '')} {reg.get('last_name', '')}",
                         icon=folium.Icon(color=color, icon=icon)
                     ).add_to(m)
-<<<<<<< HEAD
+
             
             # Display the map
             folium_static(m, width=800, height=600)
@@ -3147,7 +3135,7 @@ def admin_dashboard():
                 confirmed_located = len([r for r in located_registrations if r.get('confirmed')])
                 st.metric("Confirmed & Located", confirmed_located)
             
-=======
+
 
             # Display the map
             folium_static(m, width=800, height=600)
@@ -3162,13 +3150,13 @@ def admin_dashboard():
                 confirmed_located = len([r for r in located_registrations if r.get('confirmed')])
                 st.metric("Confirmed & Located", confirmed_located)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             with col3:
                 sources = {}
                 for reg in located_registrations:
                     source = reg.get('location_source', 'unknown')
                     sources[source] = sources.get(source, 0) + 1
-<<<<<<< HEAD
+
                 
                 if sources:
                     main_source = max(sources.items(), key=lambda x: x[1])
@@ -3182,7 +3170,7 @@ def admin_dashboard():
         
         col1, col2 = st.columns(2)
         
-=======
+
 
                 if sources:
                     main_source = max(sources.items(), key=lambda x: x[1])
@@ -3196,7 +3184,7 @@ def admin_dashboard():
 
         col1, col2 = st.columns(2)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
         with col1:
             st.markdown("#### Database Status")
             if engine is None:
@@ -3205,11 +3193,11 @@ def admin_dashboard():
             else:
                 st.success(f"✅ Connected to {db_type}")
                 st.write(f"**Type:** {db_type}")
-<<<<<<< HEAD
-                
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                
+
+
+
                 if db_type == "PostgreSQL":
                     if "render.com" in str(engine.url):
                         st.write("**Host:** Render PostgreSQL")
@@ -3217,18 +3205,18 @@ def admin_dashboard():
                         st.write("**Host:** Local PostgreSQL")
                 else:
                     st.write("**Host:** SQLite file")
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             # Database statistics
             if engine is not None:
                 try:
                     with engine.begin() as conn:
                         result = conn.execute(text("SELECT COUNT(*) FROM registration_form"))
                         total_count = result.scalar()
-<<<<<<< HEAD
+
                         
                         result_confirmed = conn.execute(text("SELECT COUNT(*) FROM registration_form WHERE confirmed = TRUE"))
                         confirmed_count = result_confirmed.scalar()
@@ -3246,7 +3234,7 @@ def admin_dashboard():
         with col2:
             st.markdown("#### Maintenance Actions")
             
-=======
+
 
                         result_confirmed = conn.execute(
                             text("SELECT COUNT(*) FROM registration_form WHERE confirmed = TRUE"))
@@ -3266,33 +3254,32 @@ def admin_dashboard():
         with col2:
             st.markdown("#### Maintenance Actions")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if st.button("🔄 Initialize/Restore Tables", use_container_width=True):
                 if restore_tables():
                     st.success("✅ Tables restored successfully")
                 else:
                     st.error("❌ Failed to restore tables")
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if st.button("🔧 Fix Schema", use_container_width=True):
                 if fix_database_schema():
                     st.success("✅ Schema fixed successfully")
                 else:
                     st.error("❌ Failed to fix schema")
-<<<<<<< HEAD
+
             
             if st.button("📤 Export Data", use_container_width=True):
                 export_data()
             
-=======
 
             if st.button("📤 Export Data", use_container_width=True):
                 export_data()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if st.button("🧹 Clear All Data", use_container_width=True, type="secondary"):
                 st.warning("⚠️ This will delete ALL registration data permanently!")
                 if st.checkbox("I understand this action cannot be undone"):
@@ -3301,7 +3288,7 @@ def admin_dashboard():
                         st.rerun()
                     else:
                         st.error("❌ Failed to clear data")
-<<<<<<< HEAD
+
     
     with tab4:
         st.markdown("### 🗑️ Delete Management")
@@ -3313,7 +3300,7 @@ def admin_dashboard():
         with col1:
             st.markdown("#### Delete by Criteria")
             
-=======
+
 
     with tab4:
         st.markdown("### 🗑️ Delete Management")
@@ -3325,7 +3312,7 @@ def admin_dashboard():
         with col1:
             st.markdown("#### Delete by Criteria")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             delete_option = st.selectbox(
                 "Select deletion criteria:",
                 [
@@ -3336,7 +3323,7 @@ def admin_dashboard():
                     "All registrations"
                 ]
             )
-<<<<<<< HEAD
+
             
             if delete_option == "Registrations older than...":
                 days_old = st.number_input("Delete registrations older than (days):", min_value=1, value=7)
@@ -3344,7 +3331,7 @@ def admin_dashboard():
             if st.button("🗑️ Delete by Criteria", type="secondary", use_container_width=True):
                 if delete_option != "Select...":
                     count = delete_registrations_by_criteria(delete_option, days_old if 'days_old' in locals() else None)
-=======
+
 
             if delete_option == "Registrations older than...":
                 days_old = st.number_input("Delete registrations older than (days):", min_value=1, value=7)
@@ -3353,7 +3340,7 @@ def admin_dashboard():
                 if delete_option != "Select...":
                     count = delete_registrations_by_criteria(delete_option,
                                                              days_old if 'days_old' in locals() else None)
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                     if count is not None:
                         if count > 0:
                             st.success(f"✅ Deleted {count} registration(s)")
@@ -3362,17 +3349,16 @@ def admin_dashboard():
                             st.info("ℹ️ No registrations matched the criteria")
                 else:
                     st.error("❌ Please select deletion criteria")
-<<<<<<< HEAD
         
         with col2:
             st.markdown("#### Quick Actions")
             
-=======
+
 
         with col2:
             st.markdown("#### Quick Actions")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
             if st.button("🗑️ Delete All Unconfirmed", use_container_width=True, type="secondary"):
                 count = delete_registrations_by_criteria("Unconfirmed registrations only")
                 if count is not None and count > 0:
@@ -3380,11 +3366,11 @@ def admin_dashboard():
                     st.rerun()
                 else:
                     st.info("ℹ️ No unconfirmed registrations found")
-<<<<<<< HEAD
-            
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+            
+
+
+
             if st.button("🗑️ Delete Without Location", use_container_width=True, type="secondary"):
                 count = delete_registrations_by_criteria("Registrations without location data")
                 if count is not None and count > 0:
@@ -3392,25 +3378,24 @@ def admin_dashboard():
                     st.rerun()
                 else:
                     st.info("ℹ️ No registrations without location data")
-<<<<<<< HEAD
+
     
     st.divider()
     
-=======
+
 
     st.divider()
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.admin_logged_in = False
         st.session_state.page = "landing"
         st.success("✅ Logged out successfully")
         st.rerun()
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
 def delete_registration(registration_id):
     """Delete a specific registration"""
     if engine is not None:
@@ -3430,10 +3415,10 @@ def delete_registration(registration_id):
             return True
         return False
 
-<<<<<<< HEAD
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+
 def delete_registrations_by_criteria(criteria, days_old=None):
     """Delete registrations based on criteria"""
     if engine is not None:
@@ -3442,7 +3427,7 @@ def delete_registrations_by_criteria(criteria, days_old=None):
                 if criteria == "Unconfirmed registrations only":
                     result = conn.execute(text("DELETE FROM registration_form WHERE confirmed = FALSE"))
                 elif criteria == "Registrations without location data":
-<<<<<<< HEAD
+
                     result = conn.execute(text("DELETE FROM registration_form WHERE latitude IS NULL OR longitude IS NULL"))
                 elif criteria == "Registrations older than...":
                     if days_old:
@@ -3456,7 +3441,6 @@ def delete_registrations_by_criteria(criteria, days_old=None):
                                 text("DELETE FROM registration_form WHERE created_at < datetime('now', '-' || :days || ' days')"),
                                 {"days": days_old}
                             )
-=======
                     result = conn.execute(
                         text("DELETE FROM registration_form WHERE latitude IS NULL OR longitude IS NULL"))
                 elif criteria == "Registrations older than...":
@@ -3465,18 +3449,18 @@ def delete_registrations_by_criteria(criteria, days_old=None):
                             text("DELETE FROM registration_form WHERE created_at < NOW() - INTERVAL ':days days'"),
                             {"days": days_old}
                         )
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                     else:
                         return None
                 elif criteria == "All registrations":
                     result = conn.execute(text("DELETE FROM registration_form"))
                 else:
                     return None
-<<<<<<< HEAD
-                
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+                
+
+
+
                 return result.rowcount
         except Exception as e:
             st.error(f"Bulk delete error: {e}")
@@ -3485,40 +3469,40 @@ def delete_registrations_by_criteria(criteria, days_old=None):
         # For in-memory storage
         registration_data = st.session_state.get("registration_data", {})
         initial_count = len(registration_data)
-<<<<<<< HEAD
+
         
         if criteria == "Unconfirmed registrations only":
             st.session_state.registration_data = {
                 k: v for k, v in registration_data.items() 
-=======
+
 
         if criteria == "Unconfirmed registrations only":
             st.session_state.registration_data = {
                 k: v for k, v in registration_data.items()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 if v.get('confirmed', False)
             }
         elif criteria == "Registrations without location data":
             st.session_state.registration_data = {
-<<<<<<< HEAD
+
                 k: v for k, v in registration_data.items() 
-=======
+
                 k: v for k, v in registration_data.items()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 if v.get('latitude') and v.get('longitude')
             }
         elif criteria == "All registrations":
             st.session_state.registration_data = {}
-<<<<<<< HEAD
+
         
         return initial_count - len(st.session_state.get("registration_data", {}))
 
-=======
+
 
         return initial_count - len(st.session_state.get("registration_data", {}))
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 def clear_all_data():
     """Clear all registration data"""
     if engine is not None:
@@ -3533,7 +3517,7 @@ def clear_all_data():
         st.session_state.registration_data = {}
         return True
 
-<<<<<<< HEAD
+
 def export_data():
     """Export registration data to CSV"""
     registrations = get_all_registrations()
@@ -3541,7 +3525,7 @@ def export_data():
         st.info("📭 No data to export")
         return False
     
-=======
+
 
 def export_data():
     """Export registration data to CSV"""
@@ -3560,7 +3544,7 @@ def export_data():
         st.info("📭 No data to export")
         return False
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     # Convert to DataFrame
     df_data = []
     for reg in registrations:
@@ -3585,21 +3569,21 @@ def export_data():
             "Confirmed": reg.get('confirmed', False),
             "Created At": reg.get('created_at', '')
         })
-<<<<<<< HEAD
+
     
     df = pd.DataFrame(df_data)
     
     # Generate CSV
     csv = df.to_csv(index=False)
     
-=======
+
 
     df = pd.DataFrame(df_data)
 
     # Generate CSV
     csv = df.to_csv(index=False)
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     # Create download button
     st.download_button(
         label="📥 Download CSV",
@@ -3608,16 +3592,16 @@ def export_data():
         mime="text/csv",
         use_container_width=True
     )
-<<<<<<< HEAD
+
     
     return True
 
-=======
+
 
     return True
 
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
 # =============================
 # MAIN APPLICATION
 # =============================
@@ -3625,11 +3609,11 @@ def main():
     # Initialize database if needed
     if engine is not None and not st.session_state.get("database_initialized"):
         initialize_database()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
+
     # Page routing
     pages = {
         "landing": landing_page,
@@ -3640,26 +3624,25 @@ def main():
         "admin_login": admin_login,
         "admin_dashboard": admin_dashboard
     }
-<<<<<<< HEAD
+
     
     current_page = st.session_state.get("page", "landing")
     
-=======
+
 
     current_page = st.session_state.get("page", "landing")
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     # Display the current page
     if current_page in pages:
         pages[current_page]()
     else:
         st.session_state.page = "landing"
         st.rerun()
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+    
+
+
     # Footer
     st.divider()
     st.markdown(
@@ -3671,11 +3654,12 @@ def main():
         unsafe_allow_html=True
     )
 
-<<<<<<< HEAD
-if __name__ == "__main__":
-    main()
-=======
 
 if __name__ == "__main__":
     main()
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
+
+if __name__ == "__main__":
+    main()
+
+
