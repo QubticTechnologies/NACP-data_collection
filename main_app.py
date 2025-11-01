@@ -68,7 +68,7 @@ def get_database_connection():
 
                 db_type = "PostgreSQL" if "postgresql" in connection_string else "SQLite"
 
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
                 if "render.com" in connection_string:
                     st.success("✅ Connected to Render PostgreSQL Database")
                 elif "localhost" in connection_string:
@@ -104,9 +104,9 @@ engine, db_type = get_database_connection()
 st.set_page_config(
 
     page_title="NACP Bahamas", 
-=======
+
     page_title="NACP Bahamas",
->>>>>>> dbc111f (Initial commit of cleaned census_app)
+
     layout="wide",
     page_icon="🌾",
     initial_sidebar_state="collapsed"
@@ -3661,5 +3661,6 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     main()
+
 
 
