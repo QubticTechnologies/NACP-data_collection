@@ -86,7 +86,7 @@ def get_database_connection():
 
 
 
-                return engine, db_type
+            return engine, db_type
             except Exception as e:
                 continue
 
@@ -3661,6 +3661,7 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     main()
+
 
 
 
